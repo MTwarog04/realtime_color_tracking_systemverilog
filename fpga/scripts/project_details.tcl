@@ -1,3 +1,4 @@
+
 # Copyright (C) 2025  AGH University of Science and Technology
 # MTM UEC2
 # Author: Piotr Kaczmarczyk
@@ -31,6 +32,7 @@ set xdc_files {
 
 # Specify SystemVerilog design files location   -- EDIT
 set sv_files {
+    ../rtl/ycbcr_classifier.sv
     ../rtl/ov7670_capture.sv
     ../rtl/ov7670_configurator.sv
     ../rtl/top.sv
@@ -61,3 +63,4 @@ set sv_files {
 # set mem_files {
 #    path/to/file.data
 # }
+

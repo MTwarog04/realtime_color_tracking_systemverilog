@@ -1,20 +1,7 @@
-/* Copyright (C) 2025 AGH University of Krakow */
+
 `timescale 1ns / 1ps
 
-/**
- * Top-level integration: OV7670 YUV422 capture and VGA preview on Basys3.
- *
- * Diagnostic switch map (set SW15=UP):
- *   sw[15]    1 = diagnostic VGA (Y/Cb/Cr planes)
- *   sw[14:13] channel view when sw[15]=1:
- *               00 = Y luma (grayscale)
- *               01 = Cb plane (cyan-tinted on VGA)
- *               10 = Cr plane (magenta-tinted on VGA)
- *               11 = |Cb-128|+|Cr-128| chroma magnitude (gray)
- *   sw[12]    0 = YUYV byte order, 1 = UYVY byte order
- *
- * Tracking mode (sw[15]=0): live grayscale preview from camera luma.
- */
+
 module top (
     input  logic       clk,
     input  logic       rst,
@@ -69,6 +56,7 @@ module top (
     logic [7:0] pix_cb;
     logic [7:0] pix_cr;
 
+    logic       color_mask;
     logic       in_noise_band;
     logic [7:0] frame_pixel;
     logic [7:0] diag_pixel;
@@ -95,7 +83,7 @@ module top (
         endcase
     end
 
-    assign frame_pixel = diag_enable ? diag_pixel : pix_y_luma;
+    assign frame_pixel = diag_enable ? diag_pixel : (color_mask ? 8'hff : pix_y_luma);
 
     always_ff @(posedge clk) begin
         clk_div <= clk_div + 1'b1;
@@ -132,6 +120,17 @@ module top (
         .pix_y_luma(pix_y_luma),
         .pix_cb(pix_cb),
         .pix_cr(pix_cr)
+    );
+
+    ycbcr_classifier #(
+        .TOP_IGNORE_LINES(TOP_NOISE_LINES)
+    ) u_classifier (
+        .y(pix_y_luma),
+        .cb(pix_cb),
+        .cr(pix_cr),
+        .pix_y(pix_y),
+        .sw(sw),
+        .mask(color_mask)
     );
 
     always_ff @(posedge ov7670_pclk or negedge rst_n) begin
@@ -173,6 +172,7 @@ module top (
     assign led[1] = diag_enable;
     assign led[3:2] = diag_channel;
     assign led[4] = chroma_order;
+    assign led[6] = color_mask;
     assign led[7] = pix_valid;
     assign led[15:8] = 8'b0;
 
