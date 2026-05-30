@@ -26,6 +26,7 @@ module top (
     localparam int IMG_W = 320;
     localparam int IMG_H = 240;
     localparam int TOP_NOISE_LINES = 30;
+    localparam int MAX_BLOB_PIXELS = 7680;
 
     localparam logic [1:0] CH_Y   = 2'b00;
     localparam logic [1:0] CH_CB  = 2'b01;
@@ -64,9 +65,32 @@ module top (
     logic [7:0] cr_disp;
     logic [7:0] chroma_mag;
 
+    logic [8:0] centroid_x;
+    logic [7:0] centroid_y;
+    logic       centroid_valid;
+    logic [16:0] mask_pixel_count;
+    logic [16:0] blob_count_sync1;
+    logic [16:0] blob_count_sync2;
+
+    logic [16:0] min_blob_pixels;
+    logic [3:0]  blob_bar_level;
+    logic [7:0]  blob_led_bar;
+
+    logic [8:0] smooth_x;
+    logic [7:0] smooth_y;
+    logic       smooth_tick_pclk;
+
+    logic [8:0] smooth_x_sync1;
+    logic [8:0] smooth_x_sync2;
+    logic [7:0] smooth_y_sync1;
+    logic [7:0] smooth_y_sync2;
+    logic       centroid_valid_sync1;
+    logic       centroid_valid_sync2;
+
     logic [$clog2(IMG_W * IMG_H)-1:0] cam_wr_addr;
 
     assign in_noise_band = pix_y < TOP_NOISE_LINES;
+    assign min_blob_pixels = 17'd96 + {12'b0, sw[9:5], 3'b0};
     assign servo_pan_pwm = 1'b0;
     assign servo_tilt_pwm = 1'b0;
 
@@ -133,6 +157,48 @@ module top (
         .mask(color_mask)
     );
 
+    centroid_accumulator #(
+        .IMG_W(IMG_W),
+        .IMG_H(IMG_H),
+        .TOP_IGNORE_LINES(TOP_NOISE_LINES)
+    ) u_centroid (
+        .clk(ov7670_pclk),
+        .rst_n(rst_n),
+        .pix_valid(pix_valid),
+        .frame_start(frame_start),
+        .mask(color_mask),
+        .pix_x(pix_x),
+        .pix_y(pix_y),
+        .min_blob_sw(sw[9:5]),
+        .centroid_x(centroid_x),
+        .centroid_y(centroid_y),
+        .centroid_valid(centroid_valid),
+        .mask_pixel_count(mask_pixel_count)
+    );
+
+    always_ff @(posedge ov7670_pclk or negedge rst_n) begin
+        if (!rst_n) begin
+            smooth_tick_pclk <= 1'b0;
+        end else begin
+            smooth_tick_pclk <= frame_start;
+        end
+    end
+
+    smooth_tracker #(
+        .IMG_W(IMG_W),
+        .IMG_H(IMG_H)
+    ) u_smooth_tracker (
+        .clk(ov7670_pclk),
+        .rst_n(rst_n),
+        .frame_tick(smooth_tick_pclk),
+        .measurement_valid(centroid_valid),
+        .measured_x(centroid_x),
+        .measured_y(centroid_y),
+        .sw(sw),
+        .smooth_x(smooth_x),
+        .smooth_y(smooth_y)
+    );
+
     always_ff @(posedge ov7670_pclk or negedge rst_n) begin
         if (!rst_n) begin
             cam_wr_addr <= '0;
@@ -142,6 +208,47 @@ module top (
             end else begin
                 cam_wr_addr <= cam_wr_addr + 1'b1;
             end
+        end
+    end
+
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            smooth_x_sync1 <= IMG_W / 2;
+            smooth_x_sync2 <= IMG_W / 2;
+            smooth_y_sync1 <= IMG_H / 2;
+            smooth_y_sync2 <= IMG_H / 2;
+            centroid_valid_sync1 <= 1'b0;
+            centroid_valid_sync2 <= 1'b0;
+            blob_count_sync1 <= '0;
+            blob_count_sync2 <= '0;
+        end else begin
+            smooth_x_sync1 <= smooth_x;
+            smooth_x_sync2 <= smooth_x_sync1;
+            smooth_y_sync1 <= smooth_y;
+            smooth_y_sync2 <= smooth_y_sync1;
+            centroid_valid_sync1 <= centroid_valid;
+            centroid_valid_sync2 <= centroid_valid_sync1;
+            blob_count_sync1 <= mask_pixel_count;
+            blob_count_sync2 <= blob_count_sync1;
+        end
+    end
+
+    always_comb begin
+        blob_bar_level = 4'd0;
+        blob_led_bar = 8'b0;
+
+        if (centroid_valid_sync2) begin
+            if (blob_count_sync2 >= MAX_BLOB_PIXELS) begin
+                blob_bar_level = 4'd8;
+            end else if (blob_count_sync2 <= min_blob_pixels) begin
+                blob_bar_level = 4'd1;
+            end else begin
+                blob_bar_level = 4'd1 + (
+                    ((blob_count_sync2 - min_blob_pixels) * 17'd7) /
+                    (MAX_BLOB_PIXELS - min_blob_pixels)
+                );
+            end
+            blob_led_bar = 8'hff >> (8 - blob_bar_level);
         end
     end
 
@@ -158,9 +265,9 @@ module top (
         .diag_enable(diag_enable),
         .diag_channel(diag_channel),
         .status_word(sw),
-        .track_valid(1'b0),
-        .target_x(IMG_W / 2),
-        .target_y(IMG_H / 2),
+        .track_valid(centroid_valid_sync2),
+        .target_x(smooth_x_sync2),
+        .target_y(smooth_y_sync2),
         .vs(vs),
         .hs(hs),
         .r(r),
@@ -172,8 +279,9 @@ module top (
     assign led[1] = diag_enable;
     assign led[3:2] = diag_channel;
     assign led[4] = chroma_order;
+    assign led[5] = centroid_valid_sync2;
     assign led[6] = color_mask;
     assign led[7] = pix_valid;
-    assign led[15:8] = 8'b0;
+    assign led[15:8] = blob_led_bar;
 
 endmodule

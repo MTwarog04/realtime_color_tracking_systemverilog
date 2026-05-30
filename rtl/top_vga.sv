@@ -1,30 +1,30 @@
 
 
 module top_vga (
-        input  logic clk,
-        input  logic rst_n,
+    input  logic clk,
+    input  logic rst_n,
 
-        input  logic frame_wr_clk,
-        input  logic frame_wr_en,
-        input  logic frame_wr_bank,
-        input  logic [$clog2(320 * 240)-1:0] frame_wr_addr,
-        input  logic [7:0] frame_wr_data,
+    input  logic frame_wr_clk,
+    input  logic frame_wr_en,
+    input  logic frame_wr_bank,
+    input  logic [$clog2(320 * 240)-1:0] frame_wr_addr,
+    input  logic [7:0] frame_wr_data,
 
-        input  logic frame_rd_bank,
-        input  logic frame_valid,
-        input  logic diag_enable,
-        input  logic [1:0] diag_channel,
-        input  logic [15:0] status_word,
-        input  logic track_valid,
-        input  logic [8:0] target_x,
-        input  logic [7:0] target_y,
+    input  logic frame_rd_bank,
+    input  logic frame_valid,
+    input  logic diag_enable,
+    input  logic [1:0] diag_channel,
+    input  logic [15:0] status_word,
+    input  logic track_valid,
+    input  logic [8:0] target_x,
+    input  logic [7:0] target_y,
 
-        output logic vs,
-        output logic hs,
-        output logic [3:0] r,
-        output logic [3:0] g,
-        output logic [3:0] b
-    );
+    output logic vs,
+    output logic hs,
+    output logic [3:0] r,
+    output logic [3:0] g,
+    output logic [3:0] b
+);
 
     timeunit 1ns;
     timeprecision 1ps;

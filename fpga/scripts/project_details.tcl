@@ -33,6 +33,8 @@ set xdc_files {
 # Specify SystemVerilog design files location   -- EDIT
 set sv_files {
     ../rtl/ycbcr_classifier.sv
+    ../rtl/centroid_accumulator.sv
+    ../rtl/smooth_tracker.sv
     ../rtl/ov7670_capture.sv
     ../rtl/ov7670_configurator.sv
     ../rtl/top.sv
