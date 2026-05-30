@@ -1,6 +1,3 @@
-`timescale 1ns / 1ps
-
-
 module ycbcr_classifier #(
     parameter int TOP_IGNORE_LINES = 30
 )(
