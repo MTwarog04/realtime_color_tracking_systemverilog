@@ -16,7 +16,7 @@
 set project_name vga_project
 
 # Top module name                               -- EDIT
-set top_module top_vga_basys3
+set top_module top_basys3
 
 # FPGA device
 set target xc7a35tcpg236-1
@@ -26,28 +26,37 @@ set target xc7a35tcpg236-1
 #-----------------------------------------------------#
 # Specify .xdc files location                   -- EDIT
 set xdc_files {
-    constraints/top_vga_basys3.xdc
+    constraints/top_basys3.xdc
 }
 
 # Specify SystemVerilog design files location   -- EDIT
 set sv_files {
+    ../rtl/ov7670_capture.sv
+    ../rtl/ov7670_configurator.sv
+    ../rtl/top.sv
     ../rtl/vga_pkg.sv
     ../rtl/vga_timing.sv
-    ../rtl/draw_bg.sv
+    ../rtl/vga_frame_renderer.sv
     ../rtl/top_vga.sv
-    rtl/top_vga_basys3.sv
+    ../rtl/video_framebuffer.sv
+    rtl/top_basys3.sv
 }
 
 # Specify Verilog design files location         -- EDIT
-# set verilog_files {
-#     path/to/file.v
-# }
+#set verilog_files {
+    #rtl/clk_wiz_0_clk_wiz.v
+#}
+
+# Specify ip design files location            -- EDIT
+ #set ip_files {
+
+  # ../rtl/frame_buffer.xci
+ #}
 
 # Specify VHDL design files location            -- EDIT
 # set vhdl_files {
-#    path/to/file.vhd
+#    path/to/file.data
 # }
-
 # Specify files for a memory initialization     -- EDIT
 # set mem_files {
 #    path/to/file.data
