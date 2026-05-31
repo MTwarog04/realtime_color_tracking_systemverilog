@@ -121,13 +121,13 @@ set_property PACKAGE_PIN U18 [get_ports btnC]
 
 
 
-##Pmod Header JA (servo PWM outputs)
+##Pmod Header JA
 ##Sch name = JA1
-set_property PACKAGE_PIN J1 [get_ports servo_pan_pwm]
-	set_property IOSTANDARD LVCMOS33 [get_ports servo_pan_pwm]
+#set_property PACKAGE_PIN J1 [get_ports {JA[0]}]
+	#set_property IOSTANDARD LVCMOS33 [get_ports {JA[0]}]
 ##Sch name = JA2
-set_property PACKAGE_PIN L2 [get_ports servo_tilt_pwm]
-	set_property IOSTANDARD LVCMOS33 [get_ports servo_tilt_pwm]
+#set_property PACKAGE_PIN L2 [get_ports {JA[1]}]
+	#set_property IOSTANDARD LVCMOS33 [get_ports {JA[1]}]
 ##Sch name = JA9
 #set_property PACKAGE_PIN H2 [get_ports {JA[6]}]
 	#set_property IOSTANDARD LVCMOS33 [get_ports {JA[6]}]
@@ -192,13 +192,13 @@ set_property PACKAGE_PIN L2 [get_ports servo_tilt_pwm]
 	#set_property IOSTANDARD LVCMOS33 [get_ports {JC[7]}]
 
 
-##Pmod Header JXADC
+##Pmod Header JXADC (MG90S servo PWM: pin 1 = pan, pin 2 = tilt)
 ##Sch name = XA1_P
-#set_property PACKAGE_PIN J3 [get_ports {JXADC[0]}]
-	#set_property IOSTANDARD LVCMOS33 [get_ports {JXADC[0]}]
+set_property PACKAGE_PIN J3 [get_ports servo_pan_pwm]
+	set_property IOSTANDARD LVCMOS33 [get_ports servo_pan_pwm]
 ##Sch name = XA2_P
-#set_property PACKAGE_PIN L3 [get_ports {JXADC[1]}]
-	#set_property IOSTANDARD LVCMOS33 [get_ports {JXADC[1]}]
+set_property PACKAGE_PIN L3 [get_ports servo_tilt_pwm]
+	set_property IOSTANDARD LVCMOS33 [get_ports servo_tilt_pwm]
 ##Sch name = XA3_P
 #set_property PACKAGE_PIN M2 [get_ports {JXADC[2]}]
 	#set_property IOSTANDARD LVCMOS33 [get_ports {JXADC[2]}]

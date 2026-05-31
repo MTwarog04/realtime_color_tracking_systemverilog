@@ -1,7 +1,6 @@
 
 `timescale 1ns / 1ps
 
-
 module top (
     input  logic       clk,
     input  logic       rst,
@@ -27,6 +26,7 @@ module top (
     localparam int IMG_H = 240;
     localparam int TOP_NOISE_LINES = 30;
     localparam int MAX_BLOB_PIXELS = 7680;
+    localparam int SYS_CLK_HZ      = 40_000_000;
 
     localparam logic [1:0] CH_Y   = 2'b00;
     localparam logic [1:0] CH_CB  = 2'b01;
@@ -87,12 +87,26 @@ module top (
     logic       centroid_valid_sync1;
     logic       centroid_valid_sync2;
 
+    logic [7:0] frame_start_stretch;
+    logic       frame_start_extended;
+    logic       frame_start_sync1;
+    logic       frame_start_sync2;
+    logic       frame_tick;
+
+    logic [7:0] pan_duty;
+    logic [7:0] tilt_duty;
+    logic       pan_dir;
+    logic       tilt_dir;
+
+    logic [8:0] centroid_x_sync1;
+    logic [8:0] centroid_x_sync2;
+    logic [7:0] centroid_y_sync1;
+    logic [7:0] centroid_y_sync2;
+
     logic [$clog2(IMG_W * IMG_H)-1:0] cam_wr_addr;
 
     assign in_noise_band = pix_y < TOP_NOISE_LINES;
     assign min_blob_pixels = 17'd96 + {12'b0, sw[9:5], 3'b0};
-    assign servo_pan_pwm = 1'b0;
-    assign servo_tilt_pwm = 1'b0;
 
     assign cb_disp = (pix_cb >= 8'd128) ? ((pix_cb - 8'd128) << 1) : ((8'd128 - pix_cb) << 1);
     assign cr_disp = (pix_cr >= 8'd128) ? ((pix_cr - 8'd128) << 1) : ((8'd128 - pix_cr) << 1);
@@ -211,6 +225,18 @@ module top (
         end
     end
 
+    always_ff @(posedge ov7670_pclk or negedge rst_n) begin
+        if (!rst_n) begin
+            frame_start_stretch <= '0;
+        end else if (frame_start) begin
+            frame_start_stretch <= 8'hff;
+        end else if (frame_start_stretch != '0) begin
+            frame_start_stretch <= frame_start_stretch - 1'b1;
+        end
+    end
+
+    assign frame_start_extended = |frame_start_stretch;
+
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             smooth_x_sync1 <= IMG_W / 2;
@@ -221,17 +247,67 @@ module top (
             centroid_valid_sync2 <= 1'b0;
             blob_count_sync1 <= '0;
             blob_count_sync2 <= '0;
+            frame_start_sync1 <= 1'b0;
+            frame_start_sync2 <= 1'b0;
+            centroid_x_sync1 <= IMG_W / 2;
+            centroid_x_sync2 <= IMG_W / 2;
+            centroid_y_sync1 <= IMG_H / 2;
+            centroid_y_sync2 <= IMG_H / 2;
         end else begin
             smooth_x_sync1 <= smooth_x;
             smooth_x_sync2 <= smooth_x_sync1;
             smooth_y_sync1 <= smooth_y;
             smooth_y_sync2 <= smooth_y_sync1;
+            centroid_x_sync1 <= centroid_x;
+            centroid_x_sync2 <= centroid_x_sync1;
+            centroid_y_sync1 <= centroid_y;
+            centroid_y_sync2 <= centroid_y_sync1;
             centroid_valid_sync1 <= centroid_valid;
             centroid_valid_sync2 <= centroid_valid_sync1;
             blob_count_sync1 <= mask_pixel_count;
             blob_count_sync2 <= blob_count_sync1;
+            frame_start_sync1 <= frame_start_extended;
+            frame_start_sync2 <= frame_start_sync1;
         end
     end
+
+    assign frame_tick = frame_start_sync1 & ~frame_start_sync2;
+
+    servo_controller #(
+        .CENTER_X(IMG_W / 2),
+        .CENTER_Y(IMG_H / 2),
+        .KP(16),
+        .DUTY_SHIFT(1)
+    ) u_servo_controller (
+        .clk(clk),
+        .rst_n(rst_n),
+        .frame_tick(frame_tick),
+        .target_valid(centroid_valid_sync2),
+        .target_x(centroid_x_sync2),
+        .target_y(centroid_y_sync2),
+        .pan_duty(pan_duty),
+        .tilt_duty(tilt_duty)
+    );
+
+    pwm_generator #(
+        .CLK_HZ(SYS_CLK_HZ)
+    ) u_pwm_pan (
+        .clk(clk),
+        .rst_n(rst_n),
+        .duty(pan_duty),
+        .pwm_out(servo_pan_pwm),
+        .dir_out(pan_dir)
+    );
+
+    pwm_generator #(
+        .CLK_HZ(SYS_CLK_HZ)
+    ) u_pwm_tilt (
+        .clk(clk),
+        .rst_n(rst_n),
+        .duty(tilt_duty),
+        .pwm_out(servo_tilt_pwm),
+        .dir_out(tilt_dir)
+    );
 
     always_comb begin
         blob_bar_level = 4'd0;
@@ -277,7 +353,7 @@ module top (
 
     assign led[0] = camera_config_done;
     assign led[1] = diag_enable;
-    assign led[3:2] = diag_channel;
+    assign led[3:2] = diag_enable ? diag_channel : 2'b00;
     assign led[4] = chroma_order;
     assign led[5] = centroid_valid_sync2;
     assign led[6] = color_mask;

@@ -19,7 +19,7 @@ module video_framebuffer #(
 
     localparam int PIXELS = FRAME_WIDTH * FRAME_HEIGHT;
 
-    // Pamięć sprzętowa BRAM (Block RAM) o rozmiarze pozwalającym na ping-pong buffering
+
     (* ram_style = "block" *) logic [7:0] ram [0 : 2*PIXELS-1];
 
     always_ff @(posedge wr_clk) begin
