@@ -35,7 +35,7 @@ set sv_files {
     ../rtl/ycbcr_classifier.sv
     ../rtl/centroid_accumulator.sv
     ../rtl/smooth_tracker.sv
-    #../rtl/servo_controller.sv
+    ../rtl/servo_controller.sv
     ../rtl/pwm_generator.sv
     ../rtl/ov7670_capture.sv
     ../rtl/ov7670_configurator.sv

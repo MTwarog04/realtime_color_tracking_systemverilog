@@ -24,7 +24,7 @@ module top (
 
     localparam int IMG_W = 320;
     localparam int IMG_H = 240;
-    localparam int TOP_NOISE_LINES = 30;
+    localparam int TOP_NOISE_LINES = 0;
     localparam int MAX_BLOB_PIXELS = 7680;
     localparam int SYS_CLK_HZ      = 40_000_000;
 
