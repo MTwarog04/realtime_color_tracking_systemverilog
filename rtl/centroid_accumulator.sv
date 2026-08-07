@@ -36,7 +36,7 @@ module centroid_accumulator #(    parameter int IMG_W = 320,
     logic [CNT_W-1:0]   locked_pixel_count;
     logic               in_valid_band;
 
-    assign min_blob_pixels = 10'd96 + {min_blob_sw, 3'b0};
+    assign min_blob_pixels = 17'd200 + ({12'b0, min_blob_sw} * 17'd58);
     assign in_valid_band = pix_y >= TOP_IGNORE_LINES;
 
     always_comb begin

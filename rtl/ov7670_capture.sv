@@ -35,17 +35,25 @@ module ov7670_capture #(
     logic [7:0] y_a;
     logic [7:0] y_b;
     logic [7:0] cb_val;
-    logic [7:0] cr_hold;
     logic       prev_vsync;
     logic       prev_href;
     logic       sof_pending;
 
     logic in_crop;
     logic emit_pixel;
+    logic [9:0] pair_x;
+    logic pair_in_crop;
+    logic emit_pair_pixel;
 
     assign in_crop = (x_cnt >= START_X) && (x_cnt < START_X + CROP_W) &&
                      (y_cnt >= START_Y) && (y_cnt < START_Y + CROP_H);
     assign emit_pixel = in_crop && (x_cnt[0] == 1'b0) && (y_cnt[0] == 1'b0);
+
+    assign pair_x = (x_cnt == 0) ? '0 : (x_cnt - 1'b1);
+    assign pair_in_crop = (pair_x >= START_X) && (pair_x < START_X + CROP_W) &&
+                          (y_cnt >= START_Y) && (y_cnt < START_Y + CROP_H);
+    assign emit_pair_pixel = (x_cnt != 0) && pair_in_crop &&
+                             (pair_x[0] == 1'b0) && (y_cnt[0] == 1'b0);
 
     always_ff @(posedge pclk or negedge rst_n) begin
         if (!rst_n) begin
@@ -55,7 +63,6 @@ module ov7670_capture #(
             y_a <= '0;
             y_b <= '0;
             cb_val <= '0;
-            cr_hold <= 8'd128;
             prev_vsync <= 1'b0;
             prev_href <= 1'b0;
             sof_pending <= 1'b1;
@@ -79,13 +86,11 @@ module ov7670_capture #(
                 x_cnt <= '0;
                 y_cnt <= '0;
                 byte_idx <= '0;
-                cr_hold <= 8'd128;
                 sof_pending <= 1'b1;
             end else begin
                 if (href && !prev_href) begin
                     byte_idx <= '0;
                     x_cnt <= '0;
-                    cr_hold <= 8'd128;
                 end
 
                 if (href) begin
@@ -95,12 +100,15 @@ module ov7670_capture #(
                             2'd1: cb_val <= d;
                             2'd2: begin
                                 y_b <= d;
-                                if (emit_pixel) begin
+                                x_cnt <= x_cnt + 1'b1;
+                            end
+                            2'd3: begin
+                                if (emit_pair_pixel) begin
                                     pix_valid <= 1'b1;
                                     pix_y_luma <= y_a;
                                     pix_cb <= cb_val;
-                                    pix_cr <= cr_hold;
-                                    pix_x <= (x_cnt - START_X) >> 1;
+                                    pix_cr <= d;
+                                    pix_x <= (pair_x - START_X) >> 1;
                                     pix_y <= (y_cnt - START_Y) >> 1;
 
                                     if (sof_pending) begin
@@ -108,22 +116,10 @@ module ov7670_capture #(
                                         sof_pending <= 1'b0;
                                     end
 
-                                    if ((x_cnt == START_X + CROP_W - DOWNSAMPLE) &&
+                                    if ((pair_x == START_X + CROP_W - DOWNSAMPLE) &&
                                         (y_cnt == START_Y + CROP_H - DOWNSAMPLE)) begin
                                         frame_end <= 1'b1;
                                     end
-                                end
-                                x_cnt <= x_cnt + 1'b1;
-                            end
-                            2'd3: begin
-                                cr_hold <= d;
-                                if (emit_pixel) begin
-                                    pix_valid <= 1'b1;
-                                    pix_y_luma <= y_b;
-                                    pix_cb <= cb_val;
-                                    pix_cr <= d;
-                                    pix_x <= (x_cnt - START_X) >> 1;
-                                    pix_y <= (y_cnt - START_Y) >> 1;
                                 end
                                 x_cnt <= x_cnt + 1'b1;
                             end
@@ -133,12 +129,11 @@ module ov7670_capture #(
                             2'd0: cb_val <= d;
                             2'd1: y_a <= d;
                             2'd2: begin
-                                cr_hold <= d;
                                 if (emit_pixel) begin
                                     pix_valid <= 1'b1;
                                     pix_y_luma <= y_a;
                                     pix_cb <= cb_val;
-                                    pix_cr <= cr_hold;
+                                    pix_cr <= d;
                                     pix_x <= (x_cnt - START_X) >> 1;
                                     pix_y <= (y_cnt - START_Y) >> 1;
 
@@ -156,14 +151,6 @@ module ov7670_capture #(
                             end
                             2'd3: begin
                                 y_b <= d;
-                                if (emit_pixel) begin
-                                    pix_valid <= 1'b1;
-                                    pix_y_luma <= d;
-                                    pix_cb <= cb_val;
-                                    pix_cr <= cr_hold;
-                                    pix_x <= (x_cnt - START_X) >> 1;
-                                    pix_y <= (y_cnt - START_Y) >> 1;
-                                end
                                 x_cnt <= x_cnt + 1'b1;
                             end
                         endcase

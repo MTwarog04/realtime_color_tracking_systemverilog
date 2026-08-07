@@ -106,7 +106,7 @@ module top (
     logic [$clog2(IMG_W * IMG_H)-1:0] cam_wr_addr;
 
     assign in_noise_band = pix_y < TOP_NOISE_LINES;
-    assign min_blob_pixels = 17'd96 + {12'b0, sw[9:5], 3'b0};
+    assign min_blob_pixels = 17'd200 + ({12'b0, sw[9:5]} * 17'd58);
 
     assign cb_disp = (pix_cb >= 8'd128) ? ((pix_cb - 8'd128) << 1) : ((8'd128 - pix_cb) << 1);
     assign cr_disp = (pix_cr >= 8'd128) ? ((pix_cr - 8'd128) << 1) : ((8'd128 - pix_cr) << 1);
