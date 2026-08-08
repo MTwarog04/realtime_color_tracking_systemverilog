@@ -27,6 +27,20 @@ module top (
     localparam int TOP_NOISE_LINES = 0;
     localparam int MAX_BLOB_PIXELS = 7680;
     localparam int SYS_CLK_HZ      = 40_000_000;
+    localparam int BALL_ASPECT_NUM = 2;
+    localparam int BALL_ASPECT_DEN = 3;
+    localparam int BALL_MIN_FILL_PERCENT = 40;
+    localparam int BALL_MAX_FILL_PERCENT = 95;
+    localparam int BALL_SMALL_OBJECT_LIMIT = 16;
+    localparam int BALL_SMALL_ASPECT_NUM = 1;
+    localparam int BALL_SMALL_ASPECT_DEN = 2;
+    localparam int BALL_SMALL_MIN_FILL_PERCENT = 20;
+    localparam int BALL_SMALL_MAX_FILL_PERCENT = 100;
+    localparam int BALL_MIN_DIAMETER = 8;
+    localparam int BALL_MAX_BLOBS = 16;
+    localparam int BALL_CONNECT_GAP = 3;
+    localparam int BALL_ROUND_FILL_PERCENT = 79;
+    localparam int BALL_TRACK_MAX_DISTANCE = 80;
 
     localparam logic [1:0] CH_Y   = 2'b00;
     localparam logic [1:0] CH_CB  = 2'b01;
@@ -174,16 +188,30 @@ module top (
     centroid_accumulator #(
         .IMG_W(IMG_W),
         .IMG_H(IMG_H),
-        .TOP_IGNORE_LINES(TOP_NOISE_LINES)
+        .TOP_IGNORE_LINES(TOP_NOISE_LINES),
+        .ASPECT_NUM(BALL_ASPECT_NUM),
+        .ASPECT_DEN(BALL_ASPECT_DEN),
+        .MIN_FILL_PERCENT(BALL_MIN_FILL_PERCENT),
+        .MAX_FILL_PERCENT(BALL_MAX_FILL_PERCENT),
+        .SMALL_OBJECT_LIMIT(BALL_SMALL_OBJECT_LIMIT),
+        .SMALL_ASPECT_NUM(BALL_SMALL_ASPECT_NUM),
+        .SMALL_ASPECT_DEN(BALL_SMALL_ASPECT_DEN),
+        .SMALL_MIN_FILL_PERCENT(BALL_SMALL_MIN_FILL_PERCENT),
+        .SMALL_MAX_FILL_PERCENT(BALL_SMALL_MAX_FILL_PERCENT),
+        .MIN_DIAMETER(BALL_MIN_DIAMETER),
+        .MAX_BLOBS(BALL_MAX_BLOBS),
+        .CONNECT_GAP(BALL_CONNECT_GAP),
+        .ROUND_FILL_PERCENT(BALL_ROUND_FILL_PERCENT),
+        .TRACK_MAX_DISTANCE(BALL_TRACK_MAX_DISTANCE)
     ) u_centroid (
         .clk(ov7670_pclk),
         .rst_n(rst_n),
         .pix_valid(pix_valid),
         .frame_start(frame_start),
+        .frame_end(frame_end),
         .mask(color_mask),
         .pix_x(pix_x),
         .pix_y(pix_y),
-        .min_blob_sw(sw[9:5]),
         .centroid_x(centroid_x),
         .centroid_y(centroid_y),
         .centroid_valid(centroid_valid),
