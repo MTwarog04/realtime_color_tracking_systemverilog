@@ -16,13 +16,16 @@ module smooth_tracker #(    parameter int IMG_W = 320,
     output logic [7:0]  smooth_y
 );
 
-    logic [2:0] shift_amt;
+    logic [3:0] shift_amt;
+    logic [3:0] requested_shift_amt;
     logic signed [10:0] smooth_x_s;
     logic signed [9:0]  smooth_y_s;
     logic signed [10:0] delta_x;
     logic signed [9:0]  delta_y;
 
-    assign shift_amt = 3'd2 + sw[7:5];
+    assign requested_shift_amt = 4'd2 + {1'b0, sw[7:5]};
+    assign shift_amt = (requested_shift_amt > 4'd5) ?
+                       4'd5 : requested_shift_amt;
 
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin

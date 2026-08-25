@@ -21,6 +21,7 @@ module pwm_generator #(
 
     logic [CNT_W-1:0] counter;
     logic [CNT_W-1:0] pulse_limit;
+    logic [CNT_W-1:0] requested_pulse_limit;
     logic signed [31:0] pulse_s;
 
     assign dir_out = duty[7];
@@ -28,21 +29,23 @@ module pwm_generator #(
     always_comb begin
         pulse_s = CENTER_CYCLES + ($signed(duty) * HALF_RANGE) / 32'sd128;
         if (pulse_s < MIN_CYCLES) begin
-            pulse_limit = MIN_CYCLES;
+            requested_pulse_limit = MIN_CYCLES;
         end else if (pulse_s > MAX_CYCLES) begin
-            pulse_limit = MAX_CYCLES;
+            requested_pulse_limit = MAX_CYCLES;
         end else begin
-            pulse_limit = pulse_s[CNT_W-1:0];
+            requested_pulse_limit = pulse_s[CNT_W-1:0];
         end
     end
 
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             counter <= '0;
+            pulse_limit <= CENTER_CYCLES;
             pwm_out <= 1'b0;
         end else begin
             if (counter >= PERIOD_CYCLES - 1) begin
                 counter <= '0;
+                pulse_limit <= requested_pulse_limit;
             end else begin
                 counter <= counter + 1'b1;
             end
