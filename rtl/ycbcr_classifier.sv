@@ -6,7 +6,7 @@ module ycbcr_classifier #(
     parameter logic [7:0] NORMAL_Y_MAX = 8'd210,
     parameter logic [7:0] BRIGHT_Y_MIN = 8'd150,
     parameter logic [7:0] DARK_CB_MIN = 8'd44,
-    parameter logic [7:0] DARK_CB_MAX = 8'd123,
+    parameter logic [7:0] DARK_CB_MAX = 8'd115,
     parameter logic [7:0] NORMAL_CB_MIN = 8'd56,
     parameter logic [7:0] BRIGHT_CB_MIN = 8'd64,
     parameter logic [7:0] DARK_CR_MIN = 8'd60,
