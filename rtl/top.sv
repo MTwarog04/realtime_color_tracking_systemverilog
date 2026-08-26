@@ -305,12 +305,13 @@ module top (
         .CENTER_X(IMG_W / 2),
         .CENTER_Y(IMG_H / 2),
         .KP(1),
-        .DUTY_SHIFT(1),
+        .DUTY_SHIFT(4),
         .DEAD_BAND_X(4),
         .DEAD_BAND_Y(4),
         .VALID_FRAMES_TO_MOVE(2),
+        .MAX_STEP(4),
         .PAN_REVERSE(1'b0),
-        .TILT_REVERSE(1'b1)
+        .TILT_REVERSE(1'b0)
     ) u_servo_controller (
         .clk(clk),
         .rst_n(rst_n),

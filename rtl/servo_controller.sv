@@ -11,6 +11,7 @@ module servo_controller #(
     parameter int DEAD_BAND_X = 4,
     parameter int DEAD_BAND_Y = 4,
     parameter int VALID_FRAMES_TO_MOVE = 2,
+    parameter int MAX_STEP = 4,
     parameter bit PAN_REVERSE = 1'b0,
     parameter bit TILT_REVERSE = 1'b0
 )(
@@ -52,6 +53,33 @@ module servo_controller #(
         end
     endfunction
 
+    function automatic logic signed [31:0] make_step(
+        input logic signed [31:0] proportional,
+        input logic               reverse
+    );
+        logic signed [31:0] magnitude;
+        logic signed [31:0] step_magnitude;
+        logic               positive_direction;
+        begin
+            positive_direction = (proportional >= 0);
+            magnitude = positive_direction ? proportional : -proportional;
+            step_magnitude = magnitude >>> DUTY_SHIFT;
+
+            // Keep tracking responsive close to the dead band, but prevent a
+            // large image error from producing an abrupt servo movement.
+            if (step_magnitude < 32'sd1) begin
+                step_magnitude = 32'sd1;
+            end else if (step_magnitude > MAX_STEP) begin
+                step_magnitude = MAX_STEP;
+            end
+
+            if (reverse) begin
+                positive_direction = !positive_direction;
+            end
+            make_step = positive_direction ? step_magnitude : -step_magnitude;
+        end
+    endfunction
+
     always_comb begin
         err_x = $signed({1'b0, target_x}) - CENTER_X;
         err_y = $signed({2'b0, target_y}) - CENTER_Y;
@@ -60,12 +88,8 @@ module servo_controller #(
         // wrap and reverse the requested servo direction.
         p_pan = err_x * KP;
         p_tilt = err_y * KP;
-        pan_command = PAN_REVERSE ?
-                      -(p_pan >>> DUTY_SHIFT) :
-                      (p_pan >>> DUTY_SHIFT);
-        tilt_command = TILT_REVERSE ?
-                       -(p_tilt >>> DUTY_SHIFT) :
-                       (p_tilt >>> DUTY_SHIFT);
+        pan_command = make_step(p_pan, PAN_REVERSE);
+        tilt_command = make_step(p_tilt, TILT_REVERSE);
     end
 
     always_ff @(posedge clk or negedge rst_n) begin
@@ -86,10 +110,10 @@ module servo_controller #(
                 if ((VALID_FRAMES_TO_MOVE <= 1) ||
                     (valid_streak >= VALID_FRAMES_TO_MOVE - 1)) begin
                     if ((err_x > DEAD_BAND_X) || (err_x < -DEAD_BAND_X)) begin
-                        pan_s <= clamp_duty(pan_command);
+                        pan_s <= clamp_duty($signed(pan_s) + pan_command);
                     end
                     if ((err_y > DEAD_BAND_Y) || (err_y < -DEAD_BAND_Y)) begin
-                        tilt_s <= clamp_duty(tilt_command);
+                        tilt_s <= clamp_duty($signed(tilt_s) + tilt_command);
                     end
                 end
             end
