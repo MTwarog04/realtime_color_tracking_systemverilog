@@ -310,7 +310,7 @@ module top (
         .DEAD_BAND_Y(4),
         .VALID_FRAMES_TO_MOVE(2),
         .PAN_REVERSE(1'b0),
-        .TILT_REVERSE(1'b0)
+        .TILT_REVERSE(1'b1)
     ) u_servo_controller (
         .clk(clk),
         .rst_n(rst_n),
