@@ -72,6 +72,7 @@ module top (
     logic [7:0] pix_cr;
 
     logic       color_mask;
+    logic       display_mask;
     logic       in_noise_band;
     logic [7:0] frame_pixel;
     logic [7:0] diag_pixel;
@@ -135,7 +136,7 @@ module top (
         endcase
     end
 
-    assign frame_pixel = diag_enable ? diag_pixel : (color_mask ? 8'hff : pix_y_luma);
+    assign frame_pixel = diag_enable ? diag_pixel : (display_mask ? 8'hff : pix_y_luma);
 
     always_ff @(posedge clk) begin
         clk_div <= clk_div + 1'b1;
@@ -183,6 +184,18 @@ module top (
         .pix_y(pix_y),
         .sw(sw),
         .mask(color_mask)
+    );
+
+    mask_despeckle_filter #(
+        .IMG_W(IMG_W)
+    ) u_mask_despeckle_filter (
+        .clk(ov7670_pclk),
+        .rst_n(rst_n),
+        .pix_valid(pix_valid),
+        .pix_x(pix_x),
+        .pix_y(pix_y),
+        .mask_in(color_mask),
+        .mask_out(display_mask)
     );
 
     centroid_accumulator #(
@@ -391,7 +404,7 @@ module top (
     assign led[3:2] = diag_enable ? diag_channel : 2'b00;
     assign led[4] = chroma_order;
     assign led[5] = centroid_valid_sync2;
-    assign led[6] = color_mask;
+    assign led[6] = display_mask;
     assign led[7] = pix_valid;
     assign led[15:8] = blob_led_bar;
 

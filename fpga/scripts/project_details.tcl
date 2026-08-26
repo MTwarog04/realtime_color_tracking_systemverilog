@@ -33,6 +33,7 @@ set xdc_files {
 # Specify SystemVerilog design files location   -- EDIT
 set sv_files {
     ../rtl/ycbcr_classifier.sv
+    ../rtl/mask_despeckle_filter.sv
     ../rtl/centroid_accumulator.sv
     ../rtl/smooth_tracker.sv
     ../rtl/servo_controller.sv
