@@ -6,12 +6,13 @@
 module servo_controller #(
     parameter int CENTER_X = 160,
     parameter int CENTER_Y = 120,
-    parameter int KP = 1,
-    parameter int DUTY_SHIFT = 1,
     parameter int DEAD_BAND_X = 4,
     parameter int DEAD_BAND_Y = 4,
     parameter int VALID_FRAMES_TO_MOVE = 2,
-    parameter int MAX_STEP = 4,
+    parameter int PAN_MAX_STEP = 4,
+    parameter int TILT_MAX_STEP = 4,
+    parameter int PAN_POSITION_LIMIT = 127,
+    parameter int TILT_POSITION_LIMIT = 127,
     parameter bit PAN_REVERSE = 1'b0,
     parameter bit TILT_REVERSE = 1'b0
 )(
@@ -30,53 +31,57 @@ module servo_controller #(
 
     logic signed [10:0] err_x;
     logic signed [9:0]  err_y;
-    logic signed [31:0] p_pan;
-    logic signed [31:0] p_tilt;
-    logic signed [31:0] pan_command;
-    logic signed [31:0] tilt_command;
+    logic signed [31:0] pan_target;
+    logic signed [31:0] tilt_target;
 
     logic signed [8:0] pan_s;
     logic signed [8:0] tilt_s;
     logic [VALID_CNT_W-1:0] valid_streak;
 
-    function automatic logic signed [8:0] clamp_duty(
-        input logic signed [31:0] value
+    function automatic logic signed [8:0] clamp_position(
+        input logic signed [31:0] value,
+        input int                   position_limit
     );
         begin
-            if (value > 32'sd127) begin
-                clamp_duty = 9'sd127;
-            end else if (value < -32'sd128) begin
-                clamp_duty = -9'sd128;
+            if (value > position_limit) begin
+                clamp_position = position_limit;
+            end else if (value < -position_limit) begin
+                clamp_position = -position_limit;
             end else begin
-                clamp_duty = value[8:0];
+                clamp_position = value[8:0];
             end
         end
     endfunction
 
-    function automatic logic signed [31:0] make_step(
-        input logic signed [31:0] proportional,
-        input logic               reverse
+    function automatic logic signed [8:0] slew_position(
+        input logic signed [8:0]  current_position,
+        input logic signed [31:0] target_position,
+        input int                   max_step,
+        input int                   position_limit
     );
-        logic signed [31:0] magnitude;
-        logic signed [31:0] step_magnitude;
-        logic               positive_direction;
+        logic signed [31:0] current_wide;
+        logic signed [31:0] limited_target;
+        logic signed [31:0] next_position;
         begin
-            positive_direction = (proportional >= 0);
-            magnitude = positive_direction ? proportional : -proportional;
-            step_magnitude = magnitude >>> DUTY_SHIFT;
+            current_wide = current_position;
 
-            // Keep tracking responsive close to the dead band, but prevent a
-            // large image error from producing an abrupt servo movement.
-            if (step_magnitude < 32'sd1) begin
-                step_magnitude = 32'sd1;
-            end else if (step_magnitude > MAX_STEP) begin
-                step_magnitude = MAX_STEP;
+            if (target_position > position_limit) begin
+                limited_target = position_limit;
+            end else if (target_position < -position_limit) begin
+                limited_target = -position_limit;
+            end else begin
+                limited_target = target_position;
             end
 
-            if (reverse) begin
-                positive_direction = !positive_direction;
+            if (limited_target > (current_wide + max_step)) begin
+                next_position = current_wide + max_step;
+            end else if (limited_target < (current_wide - max_step)) begin
+                next_position = current_wide - max_step;
+            end else begin
+                next_position = limited_target;
             end
-            make_step = positive_direction ? step_magnitude : -step_magnitude;
+
+            slew_position = clamp_position(next_position, position_limit);
         end
     endfunction
 
@@ -84,12 +89,22 @@ module servo_controller #(
         err_x = $signed({1'b0, target_x}) - CENTER_X;
         err_y = $signed({2'b0, target_y}) - CENTER_Y;
 
-        // The products are deliberately 32-bit so that multiplication cannot
-        // wrap and reverse the requested servo direction.
-        p_pan = err_x * KP;
-        p_tilt = err_y * KP;
-        pan_command = make_step(p_pan, PAN_REVERSE);
-        tilt_command = make_step(p_tilt, TILT_REVERSE);
+        // The camera is fixed, so every image coordinate maps directly to one
+        // servo position. MAX_STEP only limits how fast that position changes.
+        if ((err_x <= DEAD_BAND_X) && (err_x >= -DEAD_BAND_X)) begin
+            pan_target = 32'sd0;
+        end else begin
+            pan_target = (err_x * PAN_POSITION_LIMIT) / CENTER_X;
+        end
+
+        if ((err_y <= DEAD_BAND_Y) && (err_y >= -DEAD_BAND_Y)) begin
+            tilt_target = 32'sd0;
+        end else begin
+            tilt_target = (err_y * TILT_POSITION_LIMIT) / CENTER_Y;
+        end
+
+        if (PAN_REVERSE) pan_target = -pan_target;
+        if (TILT_REVERSE) tilt_target = -tilt_target;
     end
 
     always_ff @(posedge clk or negedge rst_n) begin
@@ -109,12 +124,12 @@ module servo_controller #(
                 // A single false detection is not enough to move either servo.
                 if ((VALID_FRAMES_TO_MOVE <= 1) ||
                     (valid_streak >= VALID_FRAMES_TO_MOVE - 1)) begin
-                    if ((err_x > DEAD_BAND_X) || (err_x < -DEAD_BAND_X)) begin
-                        pan_s <= clamp_duty($signed(pan_s) + pan_command);
-                    end
-                    if ((err_y > DEAD_BAND_Y) || (err_y < -DEAD_BAND_Y)) begin
-                        tilt_s <= clamp_duty($signed(tilt_s) + tilt_command);
-                    end
+                    pan_s <= slew_position(
+                        pan_s, pan_target, PAN_MAX_STEP, PAN_POSITION_LIMIT
+                    );
+                    tilt_s <= slew_position(
+                        tilt_s, tilt_target, TILT_MAX_STEP, TILT_POSITION_LIMIT
+                    );
                 end
             end
         end

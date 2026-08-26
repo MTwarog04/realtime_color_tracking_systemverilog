@@ -304,12 +304,13 @@ module top (
     servo_controller #(
         .CENTER_X(IMG_W / 2),
         .CENTER_Y(IMG_H / 2),
-        .KP(1),
-        .DUTY_SHIFT(4),
-        .DEAD_BAND_X(4),
-        .DEAD_BAND_Y(4),
+        .DEAD_BAND_X(2),
+        .DEAD_BAND_Y(2),
         .VALID_FRAMES_TO_MOVE(2),
-        .MAX_STEP(4),
+        .PAN_MAX_STEP(12),
+        .TILT_MAX_STEP(8),
+        .PAN_POSITION_LIMIT(127),
+        .TILT_POSITION_LIMIT(60),
         .PAN_REVERSE(1'b0),
         .TILT_REVERSE(1'b0)
     ) u_servo_controller (
@@ -317,8 +318,8 @@ module top (
         .rst_n(rst_n),
         .frame_tick(frame_tick),
         .target_valid(centroid_valid_sync2),
-        .target_x(smooth_x_sync2),
-        .target_y(smooth_y_sync2),
+        .target_x(centroid_x_sync2),
+        .target_y(centroid_y_sync2),
         .pan_duty(pan_duty),
         .tilt_duty(tilt_duty)
     );
