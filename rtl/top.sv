@@ -324,6 +324,11 @@ module top (
         .TILT_MAX_STEP(8),
         .PAN_POSITION_LIMIT(127),
         .TILT_POSITION_LIMIT(60),
+        // Nominal parallax correction at 1.5 m:
+        // pan axis 9 cm right of camera -> -3.43 deg ~= -5 PWM units,
+        // tilt axis 3 cm above camera -> +1.15 deg ~= +2 PWM units.
+        .PAN_CENTER_TRIM(-5),
+        .TILT_CENTER_TRIM(2),
         .PAN_REVERSE(1'b0),
         .TILT_REVERSE(1'b0)
     ) u_servo_controller (

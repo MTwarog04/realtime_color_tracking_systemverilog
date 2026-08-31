@@ -13,6 +13,8 @@ module servo_controller #(
     parameter int TILT_MAX_STEP = 4,
     parameter int PAN_POSITION_LIMIT = 127,
     parameter int TILT_POSITION_LIMIT = 127,
+    parameter int PAN_CENTER_TRIM = 0,
+    parameter int TILT_CENTER_TRIM = 0,
     parameter bit PAN_REVERSE = 1'b0,
     parameter bit TILT_REVERSE = 1'b0
 )(
@@ -105,12 +107,18 @@ module servo_controller #(
 
         if (PAN_REVERSE) pan_target = -pan_target;
         if (TILT_REVERSE) tilt_target = -tilt_target;
+
+        // Fixed boresight/parallax calibration. Apply it after direction
+        // reversal so the trim signs always describe the physical servo axes.
+        pan_target = pan_target + PAN_CENTER_TRIM;
+        tilt_target = tilt_target + TILT_CENTER_TRIM;
     end
 
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            pan_s <= '0;
-            tilt_s <= '0;
+            // Start already aligned with the calibrated optical centre.
+            pan_s <= PAN_CENTER_TRIM;
+            tilt_s <= TILT_CENTER_TRIM;
             valid_streak <= '0;
         end else if (frame_tick) begin
             if (!target_valid) begin
