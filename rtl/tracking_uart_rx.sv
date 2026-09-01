@@ -1,3 +1,4 @@
+// Autor: Maciej Nowak
 /*
  * UART receiver and packet validator for tracking_uart_tx.
  *

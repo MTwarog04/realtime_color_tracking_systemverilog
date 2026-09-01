@@ -1,4 +1,4 @@
-
+// Autor: Mikołaj Twaróg
 
 module vga_timing (
         input  logic clk,

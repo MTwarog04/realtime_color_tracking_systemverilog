@@ -1,4 +1,4 @@
-
+// Autor: Mikołaj Twaróg
 `timescale 1ns / 1ps
 
 module video_framebuffer #(

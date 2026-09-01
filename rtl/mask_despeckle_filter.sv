@@ -1,3 +1,4 @@
+// Autor: Maciej Nowak
 `timescale 1ns / 1ps
 
 module mask_despeckle_filter #(

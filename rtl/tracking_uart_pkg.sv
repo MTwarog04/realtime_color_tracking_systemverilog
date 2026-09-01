@@ -1,3 +1,4 @@
+// Autor: Maciej Nowak
 /*
  * Transport format shared by the two Basys 3 bitstreams.
  *

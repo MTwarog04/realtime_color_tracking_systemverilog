@@ -1,3 +1,4 @@
+// Autorzy: Mikołaj Twaróg, Maciej Nowak
 module ycbcr_classifier #(
     parameter logic [7:0] DARK_Y_MIN = 8'd16,
     parameter logic [7:0] DARK_Y_MAX = 8'd120,

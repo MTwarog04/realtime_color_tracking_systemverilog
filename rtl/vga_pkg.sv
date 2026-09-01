@@ -1,3 +1,4 @@
+// Autor: Mikołaj Twaróg
 /**
  * Copyright (C) 2025  AGH University of Science and Technology
  * MTM UEC2

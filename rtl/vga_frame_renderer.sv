@@ -1,4 +1,4 @@
-
+// Autor: Mikołaj Twaróg
 module vga_frame_renderer #(
         parameter int FRAME_WIDTH = 320,
         parameter int FRAME_HEIGHT = 240,

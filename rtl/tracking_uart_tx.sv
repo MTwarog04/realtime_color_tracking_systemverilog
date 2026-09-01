@@ -1,3 +1,4 @@
+// Autor: Maciej Nowak
 /*
  * UART transmitter for one camera-tracking result per frame.
  *
