@@ -62,16 +62,18 @@ module vga_frame_renderer #(
     logic [10:0] rot_y;
     logic [10:0] src_x;
     logic [10:0] src_y;
+    logic [10:0] src_x_pipe;
+    logic [10:0] src_y_pipe;
 
-    logic [1:0] visible_pipe;
-    logic [1:0] border_pipe;
-    logic [1:0] banner_pipe;
-    logic [1:0] track_indicator_pipe;
-    logic [1:0] frame_valid_pipe;
-    logic [1:0] track_valid_pipe;
-    logic [1:0] diag_enable_pipe;
-    logic [1:0] diag_channel_pipe [0:1];
-    logic [1:0] crosshair_pipe;
+    logic [2:0] visible_pipe;
+    logic [2:0] border_pipe;
+    logic [2:0] banner_pipe;
+    logic [2:0] track_indicator_pipe;
+    logic [2:0] frame_valid_pipe;
+    logic [2:0] track_valid_pipe;
+    logic [2:0] diag_enable_pipe;
+    logic [1:0] diag_channel_pipe [0:2];
+    logic [2:0] crosshair_pipe;
 
     function automatic logic [4:0] font_row(input logic [7:0] ch, input integer row);
         begin
@@ -134,12 +136,12 @@ module vga_frame_renderer #(
         end
     endfunction
 
-    logic [10:0] vcount_pipe [0:1];
-    logic [10:0] hcount_pipe [0:1];
-    logic [1:0] vsync_pipe;
-    logic [1:0] vblnk_pipe;
-    logic [1:0] hsync_pipe;
-    logic [1:0] hblnk_pipe;
+    logic [10:0] vcount_pipe [0:2];
+    logic [10:0] hcount_pipe [0:2];
+    logic [2:0] vsync_pipe;
+    logic [2:0] vblnk_pipe;
+    logic [2:0] hsync_pipe;
+    logic [2:0] hblnk_pipe;
 
     int diff_x, diff_y;
 
@@ -168,8 +170,6 @@ module vga_frame_renderer #(
             rot_y = (image_y * ROT_HEIGHT) / DISPLAY_HEIGHT;
             src_x = rot_y;
             src_y = FRAME_HEIGHT - 1 - rot_x;
-            frame_rd_addr_nxt = (src_y * FRAME_WIDTH) + src_x;
-
             diff_x = $signed({1'b0, src_x}) - $signed({3'b0, target_x});
             diff_y = $signed({1'b0, src_y}) - $signed({4'b0, target_y});
             crosshair_now = 1'b0;
@@ -183,14 +183,17 @@ module vga_frame_renderer #(
             rot_y = '0;
             src_x = '0;
             src_y = '0;
-            frame_rd_addr_nxt = '0;
             crosshair_now = 1'b0;
         end
     end
 
+    assign frame_rd_addr_nxt = (src_y_pipe * FRAME_WIDTH) + src_x_pipe;
+
     always_ff @(posedge clk or negedge rst_n) begin : renderer_ff
         if (!rst_n) begin
             frame_rd_addr <= '0;
+            src_x_pipe <= '0;
+            src_y_pipe <= '0;
             visible_pipe <= '0;
             border_pipe <= '0;
             banner_pipe <= '0;
@@ -201,10 +204,13 @@ module vga_frame_renderer #(
             diag_enable_pipe <= '0;
             diag_channel_pipe[0] <= '0;
             diag_channel_pipe[1] <= '0;
+            diag_channel_pipe[2] <= '0;
             vcount_pipe[0] <= '0;
             vcount_pipe[1] <= '0;
+            vcount_pipe[2] <= '0;
             hcount_pipe[0] <= '0;
             hcount_pipe[1] <= '0;
+            hcount_pipe[2] <= '0;
             vsync_pipe <= '0;
             vblnk_pipe <= '0;
             hsync_pipe <= '0;
@@ -218,61 +224,66 @@ module vga_frame_renderer #(
             rgb_out <= 12'h0_0_0;
         end else begin
             frame_rd_addr <= frame_rd_addr_nxt;
+            src_x_pipe <= src_x;
+            src_y_pipe <= src_y;
 
-            visible_pipe <= {visible_pipe[0], visible_now};
-            border_pipe <= {border_pipe[0], border_now};
-            banner_pipe <= {banner_pipe[0], banner_now};
-            track_indicator_pipe <= {track_indicator_pipe[0], track_indicator_now};
-            frame_valid_pipe <= {frame_valid_pipe[0], frame_valid};
-            track_valid_pipe <= {track_valid_pipe[0], track_valid};
-            crosshair_pipe <= {crosshair_pipe[0], crosshair_now};
-            diag_enable_pipe <= {diag_enable_pipe[0], diag_enable};
+            visible_pipe <= {visible_pipe[1:0], visible_now};
+            border_pipe <= {border_pipe[1:0], border_now};
+            banner_pipe <= {banner_pipe[1:0], banner_now};
+            track_indicator_pipe <= {track_indicator_pipe[1:0], track_indicator_now};
+            frame_valid_pipe <= {frame_valid_pipe[1:0], frame_valid};
+            track_valid_pipe <= {track_valid_pipe[1:0], track_valid};
+            crosshair_pipe <= {crosshair_pipe[1:0], crosshair_now};
+            diag_enable_pipe <= {diag_enable_pipe[1:0], diag_enable};
             diag_channel_pipe[0] <= diag_channel;
             diag_channel_pipe[1] <= diag_channel_pipe[0];
+            diag_channel_pipe[2] <= diag_channel_pipe[1];
 
             vcount_pipe[0] <= vcount_in;
             vcount_pipe[1] <= vcount_pipe[0];
+            vcount_pipe[2] <= vcount_pipe[1];
             hcount_pipe[0] <= hcount_in;
             hcount_pipe[1] <= hcount_pipe[0];
-            vsync_pipe <= {vsync_pipe[0], vsync_in};
-            vblnk_pipe <= {vblnk_pipe[0], vblnk_in};
-            hsync_pipe <= {hsync_pipe[0], hsync_in};
-            hblnk_pipe <= {hblnk_pipe[0], hblnk_in};
+            hcount_pipe[2] <= hcount_pipe[1];
+            vsync_pipe <= {vsync_pipe[1:0], vsync_in};
+            vblnk_pipe <= {vblnk_pipe[1:0], vblnk_in};
+            hsync_pipe <= {hsync_pipe[1:0], hsync_in};
+            hblnk_pipe <= {hblnk_pipe[1:0], hblnk_in};
 
-            vcount_out <= vcount_pipe[1];
-            hcount_out <= hcount_pipe[1];
-            vsync_out <= vsync_pipe[1];
-            vblnk_out <= vblnk_pipe[1];
-            hsync_out <= hsync_pipe[1];
-            hblnk_out <= hblnk_pipe[1];
+            vcount_out <= vcount_pipe[2];
+            hcount_out <= hcount_pipe[2];
+            vsync_out <= vsync_pipe[2];
+            vblnk_out <= vblnk_pipe[2];
+            hsync_out <= hsync_pipe[2];
+            hblnk_out <= hblnk_pipe[2];
 
-            if (vblnk_pipe[1] || hblnk_pipe[1]) begin
+            if (vblnk_pipe[2] || hblnk_pipe[2]) begin
                 rgb_out <= 12'h0_0_0;
-            end else if (visible_pipe[1] && frame_valid_pipe[1]) begin
-                if (diag_enable_pipe[1]) begin
-                    case (diag_channel_pipe[1])
+            end else if (visible_pipe[2] && frame_valid_pipe[2]) begin
+                if (diag_enable_pipe[2]) begin
+                    case (diag_channel_pipe[2])
                         2'b01: rgb_out <= {4'h0, frame_rd_data, frame_rd_data};
                         2'b10: rgb_out <= {frame_rd_data, 4'h0, frame_rd_data};
                         2'b11: rgb_out <= {frame_rd_data, frame_rd_data, 4'h0};
                         default: rgb_out <= {frame_rd_data, frame_rd_data, frame_rd_data};
                     endcase
-                end else if (crosshair_pipe[1]) begin
+                end else if (crosshair_pipe[2]) begin
                     rgb_out <= 12'hf_0_0;
                 end else begin
                     rgb_out <= {frame_rd_data, frame_rd_data, frame_rd_data};
                 end
-            end else if (border_pipe[1]) begin
-                rgb_out <= frame_valid_pipe[1] ? 12'h0_d_7 : 12'hd_8_0;
+            end else if (border_pipe[2]) begin
+                rgb_out <= frame_valid_pipe[2] ? 12'h0_d_7 : 12'hd_8_0;
             end else begin
-                rgb_out <= frame_valid_pipe[1] ? 12'h0_1_1 : 12'h1_0_0;
+                rgb_out <= frame_valid_pipe[2] ? 12'h0_1_1 : 12'h1_0_0;
             end
 
-            if (banner_pipe[1] && !diag_enable_pipe[1]) begin
+            if (banner_pipe[2] && !diag_enable_pipe[2]) begin
                 rgb_out <= 12'h0_0_3;
             end
 
-            if (track_indicator_pipe[1] && !diag_enable_pipe[1]) begin
-                rgb_out <= track_valid_pipe[1] ? 12'h0_f_0 : 12'h8_0_0;
+            if (track_indicator_pipe[2] && !diag_enable_pipe[2]) begin
+                rgb_out <= track_valid_pipe[2] ? 12'h0_f_0 : 12'h8_0_0;
             end
         end
     end
