@@ -31,6 +31,43 @@ function list_available_tests {
     exit 0
 }
 
+function configure_simulator {
+    if command -v xelab >/dev/null 2>&1; then
+        XELAB_CMD=(xelab)
+        XSIM_CMD=(xsim)
+        WINDOWS_SIMULATOR=''
+        return 0
+    fi
+
+    if command -v xelab.bat >/dev/null 2>&1; then
+        XELAB_CMD=(xelab.bat)
+        XSIM_CMD=(xsim.bat)
+        WINDOWS_SIMULATOR=''
+        return 0
+    fi
+
+    windows_bin=${VIVADO_WINDOWS_BIN:-}
+    if [[ -z ${windows_bin} ]]; then
+        vivado_alias=$(alias vivado 2>/dev/null || true)
+        vivado_batch=${vivado_alias#*\"}
+        vivado_batch=${vivado_batch%%\"*}
+        if [[ ${vivado_batch} == *.bat ]]; then
+            windows_bin=${vivado_batch%\\vivado.bat}
+        fi
+    fi
+
+    if [[ -n ${windows_bin} ]] &&
+       [[ -f $(wslpath -u "${windows_bin}\\xelab.bat") ]]; then
+        XELAB_CMD=(cmd.exe /C "${windows_bin}\\xelab.bat")
+        XSIM_CMD=(cmd.exe /C "${windows_bin}\\xsim.bat")
+        WINDOWS_SIMULATOR=1
+        return 0
+    fi
+
+    echo "ERROR: xelab was not found. Source env.sh or add Vivado to PATH."
+    return 1
+}
+
 function execute_test {
     # Remove untracked files
     git clean -fXd .
@@ -39,6 +76,16 @@ function execute_test {
     cd build
 
     test_name=$1
+
+    if ! configure_simulator; then
+        cd ..
+        return 1
+    fi
+
+    project_file=${ROOT_DIR}/sim/${test_name}/${test_name}.prj
+    if [[ ${WINDOWS_SIMULATOR} ]]; then
+        project_file=$(wslpath -w "${project_file}")
+    fi
 
     # Elaboration and simulation options
     if [[ $(grep 'glbl.v' -oc  ${ROOT_DIR}/sim/${test_name}/${test_name}.prj) -gt 0 ]]; then
@@ -50,17 +97,36 @@ function execute_test {
     XELAB_OPTS="work.${test_name}_tb
                 ${COMPILE_GLBL}
                 -snapshot ${test_name}_tb
-                -prj ${ROOT_DIR}/sim/${test_name}/${test_name}.prj
+                -prj ${project_file}
                 -timescale 1ns/1ps
                 -L unisims_ver"
 
     # Run simulation
     if [[ ${show_gui} ]]; then
-        xelab ${XELAB_OPTS} -debug typical
-        xsim ${test_name}_tb -gui -t ${ROOT_DIR}/tools/sim_cmd.tcl
+        "${XELAB_CMD[@]}" ${XELAB_OPTS} -debug typical || return 1
+        sim_script=${ROOT_DIR}/tools/sim_cmd.tcl
+        if [[ ${WINDOWS_SIMULATOR} ]]; then
+            sim_script=$(wslpath -w "${sim_script}")
+        fi
+        "${XSIM_CMD[@]}" ${test_name}_tb -gui -t "${sim_script}"
     else
-        xelab ${XELAB_OPTS} -standalone -runall \
-        | grep -ie '^\|fatal:\|error:\|critical\|warning:' --color=always
+        simulation_output=$("${XELAB_CMD[@]}" ${XELAB_OPTS} \
+                            -standalone -runall 2>&1)
+        simulator_status=$?
+
+        if [[ ${simulator_status} -ne 0 ]]; then
+            echo "${simulation_output}"
+        else
+            echo "${simulation_output}" |
+                grep -Eie 'PASSED|^fatal:|^error:|critical|warning:' \
+                     --color=always || true
+        fi
+
+        if [[ ${simulator_status} -ne 0 ]] ||
+           echo "${simulation_output}" | grep -Eiq '^fatal:|^error:'; then
+            cd ..
+            return 1
+        fi
     fi
 
     cd ..
@@ -68,17 +134,17 @@ function execute_test {
 
 # Run all available simulations
 function run_all {
+    failed_tests=0
     for test in $(list_available_tests); do
-        err_ctr=0
         echo -en "${test}:\t"
-        err_ctr=$(execute_test ${test} | grep -oic 'error')
-        if [ $err_ctr == 0 ]; then
+        if execute_test ${test}; then
             echo -e "\033[1;32m PASSED\033[0;39m"
         else
             echo -e "\033[1;31m FAILED\033[0;39m"
+            failed_tests=$((failed_tests + 1))
         fi
     done
-    exit 0
+    exit ${failed_tests}
 }
 
 # ------------------------------------------------------------------------------

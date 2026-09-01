@@ -1,0 +1,4 @@
+sv work ../../rtl/ycbcr_classifier.sv
+sv work ../../rtl/centroid_accumulator.sv
+sv work ../../rtl/smooth_tracker.sv
+sv work ../image_processing/image_processing_tb.sv

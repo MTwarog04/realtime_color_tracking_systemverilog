@@ -54,6 +54,19 @@ The receiver updates the servo only after a complete, CRC-correct packet.  If
 no valid packet arrives for 0.5 seconds, it clears `target_valid` and marks
 the link inactive.
 
+## Running simulations
+
+After sourcing `env.sh`, list or run the self-checking tests with:
+
+```bash
+./tools/run_simulation.sh -l
+./tools/run_simulation.sh -a
+```
+
+The test set checks PWM timing, servo movement and limits, UART packets and
+CRC errors, colour detection and centroid calculation, OV7670 capture, and a
+complete VGA timing frame. A failed check is reported as `FAILED`.
+
 ## Building both bitstreams automatically
 
 After sourcing `env.sh`, run:
