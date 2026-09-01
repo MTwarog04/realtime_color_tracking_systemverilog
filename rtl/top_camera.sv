@@ -172,14 +172,13 @@ module top_camera (
         .pix_cr(pix_cr)
     );
 
-    ycbcr_classifier #(
-        .TOP_IGNORE_LINES(TOP_NOISE_LINES)
-    ) u_classifier (
+    ycbcr_classifier u_classifier (
         .y(pix_y_luma),
         .cb(pix_cb),
         .cr(pix_cr),
-        .pix_y(pix_y),
-        .sw(sw),
+        .line_valid(!in_noise_band),
+        .cb_adjust(sw[4:0]),
+        .luma_adjust(sw[14:10]),
         .mask(color_mask)
     );
 
@@ -246,7 +245,7 @@ module top_camera (
         .measurement_valid(centroid_valid),
         .measured_x(centroid_x),
         .measured_y(centroid_y),
-        .sw(sw),
+        .smoothing_control(sw[7:5]),
         .smooth_x(smooth_x),
         .smooth_y(smooth_y)
     );
@@ -359,7 +358,6 @@ module top_camera (
         .frame_valid(camera_config_done),
         .diag_enable(diag_enable),
         .diag_channel(diag_channel),
-        .status_word(sw),
         .track_valid(centroid_valid_sync2),
         .target_x(smooth_x_sync2),
         .target_y(smooth_y_sync2),

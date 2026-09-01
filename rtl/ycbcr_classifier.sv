@@ -1,5 +1,4 @@
 module ycbcr_classifier #(
-    parameter int TOP_IGNORE_LINES = 30,
     parameter logic [7:0] DARK_Y_MIN = 8'd16,
     parameter logic [7:0] DARK_Y_MAX = 8'd120,
     parameter logic [7:0] NORMAL_Y_MIN = 8'd60,
@@ -19,8 +18,9 @@ module ycbcr_classifier #(
     input  logic [7:0] y,
     input  logic [7:0] cb,
     input  logic [7:0] cr,
-    input  logic [7:0] pix_y,
-    input  logic [15:0] sw,
+    input  logic       line_valid,
+    input  logic [4:0] cb_adjust,
+    input  logic [4:0] luma_adjust,
     output logic       mask
 );
 
@@ -28,15 +28,13 @@ module ycbcr_classifier #(
     logic [7:0] cb_max_base;
     logic [7:0] bright_cb_max;
     logic [7:0] y_min;
-    logic       in_valid_band;
     logic       dark_match;
     logic       normal_match;
     logic       bright_match;
 
-    assign cb_min_dist = (sw[4:0] >= 5'd30) ? 8'd2 : (8'd32 - {3'b0, sw[4:0]});
+    assign cb_min_dist = (cb_adjust >= 5'd30) ? 8'd2 : (8'd32 - {3'b0, cb_adjust});
     assign cb_max_base = 8'd128 - cb_min_dist;
-    assign y_min = DARK_Y_MIN + {sw[14:10], 2'b00};
-    assign in_valid_band = pix_y >= TOP_IGNORE_LINES;
+    assign y_min = DARK_Y_MIN + {luma_adjust, 2'b00};
 
     // Strongly lit blue pixels may move closer to neutral chrominance, so the
     // bright profile receives a small upper-Cb margin.
@@ -71,7 +69,7 @@ module ycbcr_classifier #(
 
     always_comb begin
         mask = 1'b0;
-        if (in_valid_band &&
+        if (line_valid &&
             (y >= y_min) &&
             (dark_match || normal_match || bright_match)) begin
             mask = 1'b1;

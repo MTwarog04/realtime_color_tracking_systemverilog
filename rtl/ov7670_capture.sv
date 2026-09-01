@@ -33,9 +33,7 @@ module ov7670_capture #(
     logic [9:0] y_cnt;
     logic [1:0] byte_idx;
     logic [7:0] y_a;
-    logic [7:0] y_b;
     logic [7:0] cb_val;
-    logic       prev_vsync;
     logic       prev_href;
     logic       sof_pending;
 
@@ -61,9 +59,7 @@ module ov7670_capture #(
             y_cnt <= '0;
             byte_idx <= '0;
             y_a <= '0;
-            y_b <= '0;
             cb_val <= '0;
-            prev_vsync <= 1'b0;
             prev_href <= 1'b0;
             sof_pending <= 1'b1;
             pix_valid <= 1'b0;
@@ -75,7 +71,6 @@ module ov7670_capture #(
             pix_cb <= '0;
             pix_cr <= '0;
         end else begin
-            prev_vsync <= vsync;
             prev_href <= href;
 
             pix_valid <= 1'b0;
@@ -99,7 +94,6 @@ module ov7670_capture #(
                             2'd0: y_a <= d;
                             2'd1: cb_val <= d;
                             2'd2: begin
-                                y_b <= d;
                                 x_cnt <= x_cnt + 1'b1;
                             end
                             2'd3: begin
@@ -150,7 +144,6 @@ module ov7670_capture #(
                                 x_cnt <= x_cnt + 1'b1;
                             end
                             2'd3: begin
-                                y_b <= d;
                                 x_cnt <= x_cnt + 1'b1;
                             end
                         endcase

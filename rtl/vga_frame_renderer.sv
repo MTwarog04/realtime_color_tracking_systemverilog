@@ -11,7 +11,6 @@ module vga_frame_renderer #(
         input  logic frame_valid,
         input  logic diag_enable,
         input  logic [1:0] diag_channel,
-        input  logic [15:0] status_word,
         input  logic track_valid,
         input  logic [8:0] target_x,
         input  logic [7:0] target_y,
@@ -24,7 +23,7 @@ module vga_frame_renderer #(
         input  logic        hblnk_in,
 
         output logic [$clog2(FRAME_WIDTH * FRAME_HEIGHT)-1:0] frame_rd_addr,
-        input  logic [7:0] frame_rd_data,
+        input  logic [3:0] frame_rd_data,
 
         output logic [10:0] vcount_out,
         output logic        vsync_out,
@@ -71,7 +70,7 @@ module vga_frame_renderer #(
     logic [1:0] frame_valid_pipe;
     logic [1:0] track_valid_pipe;
     logic [1:0] diag_enable_pipe;
-    logic [1:0] diag_channel_pipe;
+    logic [1:0] diag_channel_pipe [0:1];
     logic [1:0] crosshair_pipe;
 
     function automatic logic [4:0] font_row(input logic [7:0] ch, input integer row);
@@ -200,7 +199,8 @@ module vga_frame_renderer #(
             track_valid_pipe <= '0;
             crosshair_pipe <= '0;
             diag_enable_pipe <= '0;
-            diag_channel_pipe <= '0;
+            diag_channel_pipe[0] <= '0;
+            diag_channel_pipe[1] <= '0;
             vcount_pipe[0] <= '0;
             vcount_pipe[1] <= '0;
             hcount_pipe[0] <= '0;
@@ -227,7 +227,8 @@ module vga_frame_renderer #(
             track_valid_pipe <= {track_valid_pipe[0], track_valid};
             crosshair_pipe <= {crosshair_pipe[0], crosshair_now};
             diag_enable_pipe <= {diag_enable_pipe[0], diag_enable};
-            diag_channel_pipe <= {diag_channel_pipe[0], diag_channel};
+            diag_channel_pipe[0] <= diag_channel;
+            diag_channel_pipe[1] <= diag_channel_pipe[0];
 
             vcount_pipe[0] <= vcount_in;
             vcount_pipe[1] <= vcount_pipe[0];
@@ -250,15 +251,15 @@ module vga_frame_renderer #(
             end else if (visible_pipe[1] && frame_valid_pipe[1]) begin
                 if (diag_enable_pipe[1]) begin
                     case (diag_channel_pipe[1])
-                        2'b01: rgb_out <= {4'h0, frame_rd_data[7:4], frame_rd_data[7:4]};
-                        2'b10: rgb_out <= {frame_rd_data[7:4], 4'h0, frame_rd_data[7:4]};
-                        2'b11: rgb_out <= {frame_rd_data[7:4], frame_rd_data[7:4], 4'h0};
-                        default: rgb_out <= {frame_rd_data[7:4], frame_rd_data[7:4], frame_rd_data[7:4]};
+                        2'b01: rgb_out <= {4'h0, frame_rd_data, frame_rd_data};
+                        2'b10: rgb_out <= {frame_rd_data, 4'h0, frame_rd_data};
+                        2'b11: rgb_out <= {frame_rd_data, frame_rd_data, 4'h0};
+                        default: rgb_out <= {frame_rd_data, frame_rd_data, frame_rd_data};
                     endcase
                 end else if (crosshair_pipe[1]) begin
                     rgb_out <= 12'hf_0_0;
                 end else begin
-                    rgb_out <= {frame_rd_data[7:4], frame_rd_data[7:4], frame_rd_data[7:4]};
+                    rgb_out <= {frame_rd_data, frame_rd_data, frame_rd_data};
                 end
             end else if (border_pipe[1]) begin
                 rgb_out <= frame_valid_pipe[1] ? 12'h0_d_7 : 12'hd_8_0;
