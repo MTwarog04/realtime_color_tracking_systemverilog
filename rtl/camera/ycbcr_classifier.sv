@@ -1,4 +1,4 @@
-// Autorzy: Mikołaj Twaróg, Maciej Nowak
+/* Autorzy: Mikołaj Twaróg, Maciej Nowak */
 module ycbcr_classifier #(
     parameter logic [7:0] DARK_Y_MIN = 8'd16,
     parameter logic [7:0] DARK_Y_MAX = 8'd120,
@@ -37,14 +37,14 @@ module ycbcr_classifier #(
     assign cb_max_base = 8'd128 - cb_min_dist;
     assign y_min = DARK_Y_MIN + {luma_adjust, 2'b00};
 
-    // Strongly lit blue pixels may move closer to neutral chrominance, so the
-    // bright profile receives a small upper-Cb margin.
+    /* Strongly lit blue pixels may move closer to neutral chrominance, so the */
+    /* bright profile receives a small upper-Cb margin. */
     assign bright_cb_max = (cb_max_base >= 8'd119) ?
                            8'd127 : (cb_max_base + 8'd8);
 
-    // The luminance ranges intentionally overlap. A pixel near a boundary is
-    // checked against both neighbouring Cb-Cr windows instead of being moved
-    // abruptly from one profile to another.
+    /* The luminance ranges intentionally overlap. A pixel near a boundary is */
+    /* checked against both neighbouring Cb-Cr windows instead of being moved */
+    /* abruptly from one profile to another. */
     assign dark_match =
         (y >= DARK_Y_MIN) &&
         (y <= DARK_Y_MAX) &&

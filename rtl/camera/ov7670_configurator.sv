@@ -1,4 +1,4 @@
-// Autor: Mikołaj Twaróg
+/* Autor: Mikołaj Twaróg */
 `timescale 1ns / 1ps
 
 

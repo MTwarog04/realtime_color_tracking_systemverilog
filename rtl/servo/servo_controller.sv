@@ -1,4 +1,4 @@
-// Autorzy: Mikołaj Twaróg, Maciej Nowak
+/* Autorzy: Mikołaj Twaróg, Maciej Nowak */
 /* Copyright (C) 2025 AGH University of Krakow */
 
 `timescale 1ns / 1ps
@@ -32,9 +32,9 @@ module servo_controller #(
     localparam int VALID_CNT_W = (VALID_FRAMES_TO_MOVE < 2) ?
                                  1 : $clog2(VALID_FRAMES_TO_MOVE + 1);
 
-    // The camera dimensions and servo limits are parameters, but the
-    // reciprocal factors are calculated during elaboration.  This keeps the
-    // coordinate mapping out of the slow, inferred hardware divider.
+    /* The camera dimensions and servo limits are parameters, but the */
+    /* reciprocal factors are calculated during elaboration.  This keeps the */
+    /* coordinate mapping out of the slow, inferred hardware divider. */
     localparam int RECIP_SHIFT = 16;
     localparam logic [16:0] PAN_SCALE =
         ((PAN_POSITION_LIMIT * (1 << RECIP_SHIFT)) + CENTER_X - 1) /
@@ -81,8 +81,8 @@ module servo_controller #(
             product = magnitude * scale;
             quotient = product >> RECIP_SHIFT;
 
-            // Signed division truncates toward zero.  Shift the magnitude
-            // first and restore the sign to retain that behaviour.
+            /* Signed division truncates toward zero.  Shift the magnitude */
+            /* first and restore the sign to retain that behaviour. */
             if (negative) begin
                 scale_position = -$signed({1'b0, quotient});
             end else begin
@@ -127,8 +127,8 @@ module servo_controller #(
         err_x = $signed({1'b0, target_x}) - CENTER_X;
         err_y = $signed({2'b0, target_y}) - CENTER_Y;
 
-        // The camera is fixed, so every image coordinate maps directly to one
-        // servo position. MAX_STEP only limits how fast that position changes.
+        /* The camera is fixed, so every image coordinate maps directly to one */
+        /* servo position. MAX_STEP only limits how fast that position changes. */
         if ((err_x <= DEAD_BAND_X) && (err_x >= -DEAD_BAND_X)) begin
             pan_target = 32'sd0;
         end else begin
@@ -141,11 +141,15 @@ module servo_controller #(
             tilt_target = scale_position({err_y[9], err_y}, TILT_SCALE);
         end
 
-        if (PAN_REVERSE) pan_target = -pan_target;
-        // Permanent mechanical alignment of the laser relative to the camera.
-        // It is applied to every target, not only while the board resets.
+        if (PAN_REVERSE) begin
+            pan_target = -pan_target;
+        end
+        /* Permanent mechanical alignment of the laser relative to the camera. */
+        /* It is applied to every target, not only while the board resets. */
         pan_target = pan_target + PAN_HOME_OFFSET;
-        if (TILT_REVERSE) tilt_target = -tilt_target;
+        if (TILT_REVERSE) begin
+            tilt_target = -tilt_target;
+        end
     end
 
     always_ff @(posedge clk or negedge rst_n) begin
@@ -155,14 +159,14 @@ module servo_controller #(
             valid_streak <= '0;
         end else if (frame_tick) begin
             if (!target_valid) begin
-                // With no target both outputs retain the last valid position.
+                /* With no target both outputs retain the last valid position. */
                 valid_streak <= '0;
             end else begin
                 if (valid_streak < VALID_FRAMES_TO_MOVE) begin
                     valid_streak <= valid_streak + 1'b1;
                 end
 
-                // A single false detection is not enough to move either servo.
+                /* A single false detection is not enough to move either servo. */
                 if ((VALID_FRAMES_TO_MOVE <= 1) ||
                     (valid_streak >= VALID_FRAMES_TO_MOVE - 1)) begin
                     pan_s <= slew_position(

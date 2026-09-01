@@ -1,4 +1,4 @@
-// Autorzy: Mikołaj Twaróg, Maciej Nowak
+/* Autorzy: Mikołaj Twaróg, Maciej Nowak */
 `timescale 1ns / 1ps
 
 module top_camera (
@@ -59,7 +59,7 @@ module top_camera (
     assign chroma_order = sw[12];
 
     logic [1:0] clk_div;
-    logic       clk_25mhz;
+    logic       camera_xclk_10mhz;
     logic       camera_config_done;
 
     logic       pix_valid;
@@ -144,11 +144,11 @@ module top_camera (
         end
     end
 
-    assign clk_25mhz = clk_div[1];
-    assign ov7670_xclk = clk_25mhz;
+    assign camera_xclk_10mhz = clk_div[1];
+    assign ov7670_xclk = camera_xclk_10mhz;
 
     ov7670_configurator u_configurator (
-        .clk(clk_25mhz),
+        .clk(camera_xclk_10mhz),
         .rst_n(rst_n),
         .sioc(ov7670_sioc),
         .siod(ov7670_siod),
@@ -315,8 +315,8 @@ module top_camera (
 
     assign frame_tick = frame_start_sync1 & ~frame_start_sync2;
 
-    // The first physical servo is the horizontal axis and the second one is
-    // the vertical axis, matching the X/Y fields of the UART protocol.
+    /* The first physical servo is the horizontal axis and the second one is */
+    /* the vertical axis, matching the X/Y fields of the UART protocol. */
     tracking_uart_tx #(
         .CLK_HZ(SYS_CLK_HZ),
         .BAUD_RATE(100_000)

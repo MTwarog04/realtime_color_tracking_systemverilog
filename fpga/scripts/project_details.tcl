@@ -27,7 +27,7 @@ set target xc7a35tcpg236-1
 #-----------------------------------------------------#
 # Specify .xdc files location                   -- EDIT
 set xdc_files {
-    constraints/top_basys3.xdc
+    ../constraints/top_basys3.xdc
 }
 
 # Specify SystemVerilog design files location   -- EDIT

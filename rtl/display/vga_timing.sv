@@ -1,6 +1,8 @@
-// Autor: Mikołaj Twaróg
+/* Autor: Mikołaj Twaróg */
 
-module vga_timing (
+module vga_timing
+    import vga_pkg::*;
+(
         input  logic clk,
         input  logic rst_n,
         output logic [10:0] vcount,
@@ -14,14 +16,11 @@ module vga_timing (
     timeunit 1ns;
     timeprecision 1ps;
 
-    import vga_pkg::*;
-
-
     /**
      * Local variables and signals
      */
 
-    // Add your signals and variables here.
+    /* Add your signals and variables here. */
     logic [10:0] vcount_nxt, hcount_nxt;
     logic vsync_nxt, vblnk_nxt, hsync_nxt, hblnk_nxt;
 
@@ -29,7 +28,7 @@ module vga_timing (
      * Internal logic
      */
 
-    // Add your code here.
+    /* Add your code here. */
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             hcount <= '0;

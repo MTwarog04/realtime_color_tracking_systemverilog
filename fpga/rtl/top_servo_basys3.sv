@@ -1,4 +1,4 @@
-// Autor: Maciej Nowak
+/* Autor: Maciej Nowak */
 /**
  * Basys 3 top level for the servo node.
  *
@@ -81,8 +81,8 @@ module top_servo_basys3 (
 
     top_servo u_top_servo (
         .clk(clk_40mhz),
-        // Keep the servo controller in reset until the generated clock is
-        // stable, so TILT_STARTUP_POSITION is applied after every power-up.
+        /* Keep the servo controller in reset until the generated clock is */
+        /* stable, so TILT_STARTUP_POSITION is applied after every power-up. */
         .rst(btnC | ~locked),
         .uart_rx(uart_rx),
         .led(led),

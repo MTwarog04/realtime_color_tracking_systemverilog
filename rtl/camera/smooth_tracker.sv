@@ -1,4 +1,4 @@
-// Autorzy: Mikołaj Twaróg, Maciej Nowak
+/* Autorzy: Mikołaj Twaróg, Maciej Nowak */
 `timescale 1ns / 1ps
 
 

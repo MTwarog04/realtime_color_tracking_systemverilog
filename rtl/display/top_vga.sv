@@ -1,4 +1,4 @@
-// Autor: Mikołaj Twaróg
+/* Autor: Mikołaj Twaróg */
 module top_vga (
     input  logic clk,
     input  logic rst_n,

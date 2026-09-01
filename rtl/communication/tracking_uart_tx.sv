@@ -1,4 +1,4 @@
-// Autor: Maciej Nowak
+/* Autor: Maciej Nowak */
 /*
  * UART transmitter for one camera-tracking result per frame.
  *
@@ -11,7 +11,9 @@
 
 `timescale 1ns / 1ps
 
-module tracking_uart_tx #(
+module tracking_uart_tx
+    import tracking_uart_pkg::*;
+#(
     parameter int unsigned CLK_HZ    = 40_000_000,
     parameter int unsigned BAUD_RATE = 100_000
 )(
@@ -26,10 +28,8 @@ module tracking_uart_tx #(
     output logic       frame_dropped
 );
 
-    import tracking_uart_pkg::*;
-
-    // Rounded division keeps the module reusable with baud rates that do not
-    // divide CLK_HZ exactly.  40 MHz / 100 kbaud is exactly 400 clocks/bit.
+    /* Rounded division keeps the module reusable with baud rates that do not */
+    /* divide CLK_HZ exactly.  40 MHz / 100 kbaud is exactly 400 clocks/bit. */
     localparam int unsigned CLKS_PER_BIT =
         (CLK_HZ + (BAUD_RATE / 2)) / BAUD_RATE;
     localparam int unsigned BAUD_COUNTER_W =
@@ -71,8 +71,8 @@ module tracking_uart_tx #(
         end
     endfunction
 
-    // tx_word[0] is the start bit, [8:1] are data bits LSB first, and [9] is
-    // the stop bit.  This maps directly onto the UART wire ordering.
+    /* tx_word[0] is the start bit, [8:1] are data bits LSB first, and [9] is */
+    /* the stop bit.  This maps directly onto the UART wire ordering. */
     assign tx   = (tx_state == TX_SEND) ? tx_word[bit_index] : 1'b1;
     assign busy = (tx_state == TX_SEND);
 

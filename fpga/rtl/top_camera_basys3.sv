@@ -1,4 +1,4 @@
-// Autorzy: Mikołaj Twaróg, Maciej Nowak
+/* Autorzy: Mikołaj Twaróg, Maciej Nowak */
 /**
  * Basys 3 top level for the camera / tracking node.
  *

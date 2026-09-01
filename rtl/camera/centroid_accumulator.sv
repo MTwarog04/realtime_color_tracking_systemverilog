@@ -1,4 +1,4 @@
-// Autorzy: Mikołaj Twaróg, Maciej Nowak
+/* Autorzy: Mikołaj Twaróg, Maciej Nowak */
 `timescale 1ns / 1ps
 
 
@@ -107,9 +107,9 @@ module centroid_accumulator #(
 
     assign in_valid_band = pix_y >= TOP_IGNORE_LINES;
 
-    // A masked pixel belongs to a blob when it is close to that blob's current
-    // bounding box. CONNECT_GAP joins small holes caused by the colour mask.
-    always_comb begin : find_blob_for_pixel
+    /* A masked pixel belongs to a blob when it is close to that blob's current */
+    /* bounding box. CONNECT_GAP joins small holes caused by the colour mask. */
+    always_comb begin
         match_vector = '0;
         match_found = 1'b0;
         match_index = '0;
@@ -129,8 +129,8 @@ module centroid_accumulator #(
                 end
             end
 
-            // A blob that is already above the scan and is too short can never
-            // pass MIN_DIAMETER, so its slot may safely be reused.
+            /* A blob that is already above the scan and is too short can never */
+            /* pass MIN_DIAMETER, so its slot may safely be reused. */
             if (!slot_found &&
                 (!blob_valid[i] ||
                  (({1'b0, pix_y} > ({1'b0, blob_max_y[i]} + CONNECT_GAP)) &&
@@ -142,9 +142,9 @@ module centroid_accumulator #(
         end
     end
 
-    // If a pixel bridges two fragments, combine both candidates instead of
-    // allowing one physical object to remain split into multiple blobs.
-    always_comb begin : merge_matching_blobs
+    /* If a pixel bridges two fragments, combine both candidates instead of */
+    /* allowing one physical object to remain split into multiple blobs. */
+    always_comb begin
         merged_sum_x = pix_x;
         merged_sum_y = pix_y;
         merged_pixel_count = {{(CNT_W-1){1'b0}}, 1'b1};
@@ -158,17 +158,25 @@ module centroid_accumulator #(
                 merged_sum_x = merged_sum_x + blob_sum_x[i];
                 merged_sum_y = merged_sum_y + blob_sum_y[i];
                 merged_pixel_count = merged_pixel_count + blob_pixel_count[i];
-                if (blob_min_x[i] < merged_min_x) merged_min_x = blob_min_x[i];
-                if (blob_max_x[i] > merged_max_x) merged_max_x = blob_max_x[i];
-                if (blob_min_y[i] < merged_min_y) merged_min_y = blob_min_y[i];
-                if (blob_max_y[i] > merged_max_y) merged_max_y = blob_max_y[i];
+                if (blob_min_x[i] < merged_min_x) begin
+                    merged_min_x = blob_min_x[i];
+                end
+                if (blob_max_x[i] > merged_max_x) begin
+                    merged_max_x = blob_max_x[i];
+                end
+                if (blob_min_y[i] < merged_min_y) begin
+                    merged_min_y = blob_min_y[i];
+                end
+                if (blob_max_y[i] > merged_max_y) begin
+                    merged_max_y = blob_max_y[i];
+                end
             end
         end
     end
 
-    // One shared shape evaluator checks a single candidate per clock during
-    // vertical blanking. This is much smaller than 16 parallel evaluators.
-    always_comb begin : evaluate_one_candidate
+    /* One shared shape evaluator checks a single candidate per clock during */
+    /* vertical blanking. This is much smaller than 16 parallel evaluators. */
+    always_comb begin
         eval_width = blob_valid[evaluation_index] ?
             ({1'b0, blob_max_x[evaluation_index]} -
              {1'b0, blob_min_x[evaluation_index]} + 10'd1) : 10'd0;
@@ -204,9 +212,9 @@ module centroid_accumulator #(
         eval_shape_valid = eval_size_valid &&
                            eval_aspect_valid && eval_fill_valid;
 
-        // A filled circle occupies about 79 percent of its bounding box.
-        // The ranks only select between already valid objects; they do not
-        // tighten the current acceptance limits.
+        /* A filled circle occupies about 79 percent of its bounding box. */
+        /* The ranks only select between already valid objects; they do not */
+        /* tighten the current acceptance limits. */
         eval_target_fill = eval_area * ROUND_FILL_PERCENT;
         eval_fill_error = (eval_pixels_x100 >= eval_target_fill) ?
             (eval_pixels_x100 - eval_target_fill) :
@@ -251,9 +259,9 @@ module centroid_accumulator #(
                              (eval_distance <= TRACK_MAX_DISTANCE);
     end
 
-    // Keep the previous target when possible, then prefer circle-like fill,
-    // a width close to the height, and finally the larger candidate.
-    always_comb begin : compare_candidate
+    /* Keep the previous target when possible, then prefer circle-like fill, */
+    /* a width close to the height, and finally the larger candidate. */
+    always_comb begin
         eval_candidate_better = 1'b0;
 
         if (eval_shape_valid) begin
@@ -280,7 +288,7 @@ module centroid_accumulator #(
                             evaluation_index : best_index;
     end
 
-    always_ff @(posedge clk or negedge rst_n) begin : update_blobs
+    always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             blob_valid <= '0;
             evaluation_active <= 1'b0;
@@ -307,8 +315,8 @@ module centroid_accumulator #(
                 blob_max_y[i] <= '0;
             end
         end else if (frame_start) begin
-            // Evaluation of the previous frame is already complete by here.
-            // Start collecting independent candidates for the new frame.
+            /* Evaluation of the previous frame is already complete by here. */
+            /* Start collecting independent candidates for the new frame. */
             blob_valid <= '0;
             evaluation_active <= 1'b0;
             for (integer i = 0; i < MAX_BLOBS; i = i + 1) begin

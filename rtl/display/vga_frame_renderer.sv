@@ -1,5 +1,7 @@
-// Autor: Mikołaj Twaróg
-module vga_frame_renderer #(
+/* Autor: Mikołaj Twaróg */
+module vga_frame_renderer
+    import vga_pkg::*;
+#(
         parameter int FRAME_WIDTH = 320,
         parameter int FRAME_HEIGHT = 240,
         parameter int SCALE = 2,
@@ -36,8 +38,6 @@ module vga_frame_renderer #(
 
     timeunit 1ns;
     timeprecision 1ps;
-
-    import vga_pkg::*;
 
     localparam int ROT_WIDTH = FRAME_HEIGHT;
     localparam int ROT_HEIGHT = FRAME_WIDTH;
@@ -145,7 +145,7 @@ module vga_frame_renderer #(
 
     int diff_x, diff_y;
 
-    always_comb begin : address_comb
+    always_comb begin
         visible_now = (!vblnk_in && !hblnk_in) &&
             (hcount_in >= DISPLAY_X_OFFSET) && (hcount_in < (DISPLAY_X_OFFSET + DISPLAY_WIDTH)) &&
             (vcount_in >= DISPLAY_Y_OFFSET) && (vcount_in < (DISPLAY_Y_OFFSET + DISPLAY_HEIGHT));
@@ -173,9 +173,16 @@ module vga_frame_renderer #(
             diff_x = $signed({1'b0, src_x}) - $signed({3'b0, target_x});
             diff_y = $signed({1'b0, src_y}) - $signed({4'b0, target_y});
             crosshair_now = 1'b0;
-            if ((diff_y == 0) && (diff_x > -15) && (diff_x < 15)) crosshair_now = 1'b1;
-            if ((diff_x == 0) && (diff_y > -15) && (diff_y < 15)) crosshair_now = 1'b1;
-            if ((diff_x > -3) && (diff_x < 3) && (diff_y > -3) && (diff_y < 3)) crosshair_now = 1'b0; // Pusty srodek celownika
+            if ((diff_y == 0) && (diff_x > -15) && (diff_x < 15)) begin
+                crosshair_now = 1'b1;
+            end
+            if ((diff_x == 0) && (diff_y > -15) && (diff_y < 15)) begin
+                crosshair_now = 1'b1;
+            end
+            if ((diff_x > -3) && (diff_x < 3) &&
+                (diff_y > -3) && (diff_y < 3)) begin
+                crosshair_now = 1'b0; /* Pusty srodek celownika */
+            end
         end else begin
             image_x = '0;
             image_y = '0;
@@ -189,7 +196,7 @@ module vga_frame_renderer #(
 
     assign frame_rd_addr_nxt = (src_y_pipe * FRAME_WIDTH) + src_x_pipe;
 
-    always_ff @(posedge clk or negedge rst_n) begin : renderer_ff
+    always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             frame_rd_addr <= '0;
             src_x_pipe <= '0;

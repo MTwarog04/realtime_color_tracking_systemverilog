@@ -10,7 +10,7 @@ set target xc7a35tcpg236-1
 set build_dir build/servo
 
 set xdc_files {
-    constraints/top_servo_basys3.xdc
+    ../constraints/top_servo_basys3.xdc
 }
 
 set sv_files {

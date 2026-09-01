@@ -1,4 +1,4 @@
-// Autor: Maciej Nowak
+/* Autor: Maciej Nowak */
 /*
  * UART receiver and packet validator for tracking_uart_tx.
  *
@@ -14,7 +14,9 @@
 
 `timescale 1ns / 1ps
 
-module tracking_uart_rx #(
+module tracking_uart_rx
+    import tracking_uart_pkg::*;
+#(
     parameter int unsigned CLK_HZ            = 40_000_000,
     parameter int unsigned BAUD_RATE         = 100_000,
     parameter int unsigned LINK_TIMEOUT_CLKS = CLK_HZ / 2
@@ -29,8 +31,6 @@ module tracking_uart_rx #(
     output logic       link_alive,
     output logic       packet_error
 );
-
-    import tracking_uart_pkg::*;
 
     localparam int unsigned CLKS_PER_BIT =
         (CLK_HZ + (BAUD_RATE / 2)) / BAUD_RATE;
@@ -81,8 +81,8 @@ module tracking_uart_rx #(
 
     logic valid_packet;
 
-    // A received byte is made visible to the packet parser one clk after its
-    // stop bit.  At that point all sampled data bits are stable in rx_byte.
+    /* A received byte is made visible to the packet parser one clk after its */
+    /* stop bit.  At that point all sampled data bits are stable in rx_byte. */
     assign valid_packet = received_byte_strobe &&
                           (parse_state == PARSE_CRC) &&
                           (received_byte == parser_crc) &&
@@ -98,9 +98,9 @@ module tracking_uart_rx #(
         end
     end
 
-    // Physical 8-N-1 UART receiver.  Start and every data bit are sampled in
-    // their centre.  Each start bit re-synchronizes sampling, so the two Basys
-    // boards need no shared clock.
+    /* Physical 8-N-1 UART receiver.  Start and every data bit are sampled in */
+    /* their centre.  Each start bit re-synchronizes sampling, so the two Basys */
+    /* boards need no shared clock. */
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             rx_state             <= RX_IDLE;
@@ -127,7 +127,7 @@ module tracking_uart_rx #(
                             bit_index <= '0;
                             rx_state  <= RX_DATA;
                         end else begin
-                            // A short low glitch was not a UART start bit.
+                            /* A short low glitch was not a UART start bit. */
                             rx_state <= RX_IDLE;
                         end
                     end else begin
@@ -171,9 +171,9 @@ module tracking_uart_rx #(
         end
     end
 
-    // Packet parser and link watchdog.  The parser writes target outputs only
-    // on a complete, CRC-correct packet, preventing a corrupted UART byte from
-    // creating an unintended servo update.
+    /* Packet parser and link watchdog.  The parser writes target outputs only */
+    /* on a complete, CRC-correct packet, preventing a corrupted UART byte from */
+    /* creating an unintended servo update. */
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             parse_state         <= PARSE_SOF0;
@@ -226,7 +226,7 @@ module tracking_uart_rx #(
                             );
                             parse_state <= PARSE_SEQUENCE;
                         end else if (received_byte == TRACKING_UART_SOF0) begin
-                            // Let A5 A5 5A still lock onto the second A5.
+                            /* Let A5 A5 5A still lock onto the second A5. */
                             parser_crc <= tracking_uart_crc8_next(
                                 8'h00, TRACKING_UART_SOF0
                             );

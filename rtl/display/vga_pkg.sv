@@ -1,4 +1,4 @@
-// Autor: Mikołaj Twaróg
+/* Autor: Mikołaj Twaróg */
 /**
  * Copyright (C) 2025  AGH University of Science and Technology
  * MTM UEC2
@@ -10,7 +10,7 @@
 
 package vga_pkg;
 
-    // VESA 1024 x 768 @ 60 Hz timing using a 65 MHz pixel clock.
+    /* VESA 1024 x 768 @ 60 Hz timing using a 65 MHz pixel clock. */
     localparam int HOR_PIXELS = 1024;
     localparam int VER_PIXELS = 768;
 

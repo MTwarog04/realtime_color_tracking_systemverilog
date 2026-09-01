@@ -1,4 +1,4 @@
-// Autor: Mikołaj Twaróg
+/* Autor: Mikołaj Twaróg */
 /**
  * San Jose State University
  * EE178 Lab #4

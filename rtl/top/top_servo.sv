@@ -1,4 +1,4 @@
-// Autor: Maciej Nowak
+/* Autor: Maciej Nowak */
 `timescale 1ns / 1ps
 
 /**
@@ -56,9 +56,9 @@ module top_servo (
         .VALID_FRAMES_TO_MOVE(2),
         .PAN_MAX_STEP(12),
         .TILT_MAX_STEP(8),
-        // 9 cm camera-to-laser offset, calibrated for roughly 1 m distance.
+        /* 9 cm camera-to-laser offset, calibrated for roughly 1 m distance. */
         .PAN_HOME_OFFSET(-7),
-        // Startup calibration goes to the second JXADC signal pin (L3).
+        /* Startup calibration goes to the second JXADC signal pin (L3). */
         .TILT_STARTUP_POSITION(-60),
         .PAN_POSITION_LIMIT(127),
         .TILT_POSITION_LIMIT(60),
@@ -95,10 +95,10 @@ module top_servo (
         .dir_out(tilt_dir)
     );
 
-    // LED0: at least one valid packet arrived recently.
-    // LED1: a complete packet with bad CRC/flags was observed since reset.
-    // LED2: the last received tracking result contains a valid target.
-    // LED3: UART receiver is currently idle-high (basic wiring indication).
+    /* LED0: at least one valid packet arrived recently. */
+    /* LED1: a complete packet with bad CRC/flags was observed since reset. */
+    /* LED2: the last received tracking result contains a valid target. */
+    /* LED3: UART receiver is currently idle-high (basic wiring indication). */
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             packet_error_seen <= 1'b0;

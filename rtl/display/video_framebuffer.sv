@@ -1,4 +1,4 @@
-// Autor: Mikołaj Twaróg
+/* Autor: Mikołaj Twaróg */
 `timescale 1ns / 1ps
 
 module video_framebuffer #(
@@ -25,7 +25,9 @@ module video_framebuffer #(
     (* ram_style = "block" *) logic [7:0] ram [0 : 2*PIXELS-1];
 
     always_ff @(posedge wr_clk) begin
-        if (wr_en) ram[{wr_bank, wr_addr}] <= wr_data;
+        if (wr_en) begin
+            ram[{wr_bank, wr_addr}] <= wr_data;
+        end
     end
 
     always_ff @(posedge rd_clk or negedge rst_n) begin
