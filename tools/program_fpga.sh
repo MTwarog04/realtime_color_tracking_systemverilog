@@ -5,10 +5,31 @@
 # Author: Piotr Kaczmarczyk
 #
 # Description:
-# Load a bitstream to a Xilinx FPGA using Vivado in tcl mode
-# Run from the project root directory.
+# Load one of the two generated bitstreams to a Xilinx FPGA using Vivado.
+# Usage: program_fpga.sh camera|servo|path/to/file.bit
 
+set -euo pipefail
 
-bitstream_file=$(find results -name "*.bit")
+case "${1:-}" in
+    camera)
+        bitstream_file=results/top_camera_basys3.bit
+        ;;
+    servo)
+        bitstream_file=results/top_servo_basys3.bit
+        ;;
+    *.bit)
+        bitstream_file=$1
+        ;;
+    *)
+        echo "usage: $(basename "$0") camera|servo|path/to/file.bit" >&2
+        exit 1
+        ;;
+esac
 
-vivado -mode tcl -source fpga/scripts/program_fpga.tcl -tclargs "${bitstream_file}"
+if [[ ! -f "${bitstream_file}" ]]; then
+    echo "ERROR: bitstream does not exist: ${bitstream_file}" >&2
+    exit 1
+fi
+
+vivado -mode tcl -source fpga/scripts/program_fpga.tcl \
+    -tclargs "${bitstream_file}"

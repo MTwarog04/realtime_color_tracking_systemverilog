@@ -54,7 +54,27 @@ The receiver updates the servo only after a complete, CRC-correct packet.  If
 no valid packet arrives for 0.5 seconds, it clears `target_valid` and marks
 the link inactive.
 
-## Building in Vivado GUI (no new shell scripts)
+## Building both bitstreams automatically
+
+After sourcing `env.sh`, run:
+
+```bash
+./tools/generate_bitstream.sh
+```
+
+The script creates independent Vivado projects for both boards and writes:
+
+```text
+results/top_camera_basys3.bit
+results/top_servo_basys3.bit
+results/warning_summary.log
+```
+
+Timing and utilization reports remain in `fpga/build/camera` and
+`fpga/build/servo`. To program one board after connecting it, use
+`./tools/program_fpga.sh camera` or `./tools/program_fpga.sh servo`.
+
+## Building in Vivado GUI
 
 Create two Vivado RTL projects outside `fpga/`, for example:
 
@@ -112,10 +132,6 @@ fpga/rtl/top_servo_basys3.sv
 
 Choose **Generate Bitstream**.  Program this result into the Basys 3 connected
 to the servos.
-
-The existing `tools/generate_bitstream.sh` deliberately remains the legacy
-single-board build and should not be used for the two new GUI targets.  It
-cleans `fpga/` and assumes there is only one output bitstream.
 
 ## Servo-node LEDs
 
