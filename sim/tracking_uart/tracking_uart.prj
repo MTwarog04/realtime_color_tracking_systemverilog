@@ -1,4 +1,4 @@
-sv work ../../rtl/tracking_uart_pkg.sv
-sv work ../../rtl/tracking_uart_tx.sv
-sv work ../../rtl/tracking_uart_rx.sv
+sv work ../../rtl/communication/tracking_uart_pkg.sv
+sv work ../../rtl/communication/tracking_uart_tx.sv
+sv work ../../rtl/communication/tracking_uart_rx.sv
 sv work ../tracking_uart/tracking_uart_tb.sv

@@ -138,8 +138,12 @@ module top (
 
     assign frame_pixel = diag_enable ? diag_pixel : (display_mask ? 8'hff : pix_y_luma);
 
-    always_ff @(posedge clk) begin
-        clk_div <= clk_div + 1'b1;
+    always_ff @(posedge clk or posedge rst) begin
+        if (rst) begin
+            clk_div <= '0;
+        end else begin
+            clk_div <= clk_div + 1'b1;
+        end
     end
 
     assign clk_25mhz = clk_div[1];

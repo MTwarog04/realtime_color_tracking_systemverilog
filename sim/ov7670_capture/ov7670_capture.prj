@@ -1,2 +1,2 @@
-sv work ../../rtl/ov7670_capture.sv
+sv work ../../rtl/camera/ov7670_capture.sv
 sv work ../ov7670_capture/ov7670_capture_tb.sv

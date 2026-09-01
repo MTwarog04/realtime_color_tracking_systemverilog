@@ -14,10 +14,10 @@ set xdc_files {
 }
 
 set sv_files {
-    ../rtl/tracking_uart_pkg.sv
-    ../rtl/tracking_uart_rx.sv
-    ../rtl/servo_controller.sv
-    ../rtl/pwm_generator.sv
-    ../rtl/top_servo.sv
+    ../rtl/communication/tracking_uart_pkg.sv
+    ../rtl/communication/tracking_uart_rx.sv
+    ../rtl/servo/servo_controller.sv
+    ../rtl/servo/pwm_generator.sv
+    ../rtl/top/top_servo.sv
     rtl/top_servo_basys3.sv
 }

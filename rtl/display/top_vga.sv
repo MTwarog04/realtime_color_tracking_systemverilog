@@ -63,6 +63,7 @@ video_framebuffer #(
     .FRAME_WIDTH(320),
     .FRAME_HEIGHT(240)
 ) u_video_framebuffer (
+    .rst_n(rst_n),
     .wr_clk(frame_wr_clk),
     .wr_en(frame_wr_en),
     .wr_bank(frame_wr_bank),

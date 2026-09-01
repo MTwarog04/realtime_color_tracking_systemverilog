@@ -1,2 +1,2 @@
-sv work ../../rtl/pwm_generator.sv
+sv work ../../rtl/servo/pwm_generator.sv
 sv work ../pwm_generator/pwm_generator_tb.sv

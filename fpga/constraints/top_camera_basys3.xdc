@@ -83,6 +83,26 @@ set_property -dict { PACKAGE_PIN P18 IOSTANDARD LVCMOS33 } [get_ports ov7670_hre
 set_property -dict { PACKAGE_PIN L17 IOSTANDARD LVCMOS33 } [get_ports ov7670_pclk]
 set_property -dict { PACKAGE_PIN M19 IOSTANDARD LVCMOS33 } [get_ports ov7670_xclk]
 
+# clk_div[1] divides the 40 MHz MMCM output by four. It clocks the camera
+# configurator and drives the 10 MHz XCLK output, so keep it related to the
+# MMCM clocks instead of treating it as an asynchronous clock.
+create_generated_clock -name ov7670_xclk_int -divide_by 4 \
+    -source [get_pins u_top_camera/clk_div_reg[1]/C] \
+    [get_pins u_top_camera/clk_div_reg[1]/Q]
+
+# The 40 MHz camera reference clock is divided by four in top_camera, giving
+# the sensor a 10 MHz XCLK. OV7670 register CLKRC=0x01 divides it by two and
+# COM14=0x00 leaves PCLK undivided, so the capture clock is 5 MHz (200 ns).
+create_clock -add -name ov7670_pclk_in -period 200.000 \
+    -waveform {0.000 100.000} [get_ports ov7670_pclk]
+
+# PCLK is regenerated inside the external camera and has no guaranteed phase
+# relationship to the MMCM clocks on the FPGA. The design crosses this boundary
+# through explicit synchronization and the dual-clock frame buffer.
+set_clock_groups -asynchronous \
+    -group [get_clocks ov7670_pclk_in] \
+    -group [get_clocks -include_generated_clocks sys_clk_pin]
+
 set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets ov7670_pclk]
 set_property CONFIG_VOLTAGE 3.3 [current_design]
 set_property CFGBVS VCCO [current_design]

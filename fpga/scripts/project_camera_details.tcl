@@ -14,19 +14,19 @@ set xdc_files {
 }
 
 set sv_files {
-    ../rtl/vga_pkg.sv
-    ../rtl/ycbcr_classifier.sv
-    ../rtl/mask_despeckle_filter.sv
-    ../rtl/centroid_accumulator.sv
-    ../rtl/smooth_tracker.sv
-    ../rtl/ov7670_capture.sv
-    ../rtl/ov7670_configurator.sv
-    ../rtl/vga_timing.sv
-    ../rtl/video_framebuffer.sv
-    ../rtl/vga_frame_renderer.sv
-    ../rtl/top_vga.sv
-    ../rtl/tracking_uart_pkg.sv
-    ../rtl/tracking_uart_tx.sv
-    ../rtl/top_camera.sv
+    ../rtl/display/vga_pkg.sv
+    ../rtl/camera/ycbcr_classifier.sv
+    ../rtl/camera/mask_despeckle_filter.sv
+    ../rtl/camera/centroid_accumulator.sv
+    ../rtl/camera/smooth_tracker.sv
+    ../rtl/camera/ov7670_capture.sv
+    ../rtl/camera/ov7670_configurator.sv
+    ../rtl/display/vga_timing.sv
+    ../rtl/display/video_framebuffer.sv
+    ../rtl/display/vga_frame_renderer.sv
+    ../rtl/display/top_vga.sv
+    ../rtl/communication/tracking_uart_pkg.sv
+    ../rtl/communication/tracking_uart_tx.sv
+    ../rtl/top/top_camera.sv
     rtl/top_camera_basys3.sv
 }

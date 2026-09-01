@@ -44,7 +44,7 @@ module top_basys3 (
 
     (* KEEP = "TRUE" *)
     (* ASYNC_REG = "TRUE" *)
-    logic [7:0] safe_start = 0;
+    logic [7:0] safe_start;
 
     IBUF clk_ibuf (
         .I(clk),
@@ -81,8 +81,12 @@ module top_basys3 (
         .O(clk_ss)
     );
 
-    always_ff @(posedge clk_ss) begin
-        safe_start <= {safe_start[6:0], locked};
+    always_ff @(posedge clk_ss or negedge locked) begin
+        if (!locked) begin
+            safe_start <= '0;
+        end else begin
+            safe_start <= {safe_start[6:0], 1'b1};
+        end
     end
 
     BUFGCE #(

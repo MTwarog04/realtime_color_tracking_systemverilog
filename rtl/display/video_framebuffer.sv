@@ -5,6 +5,8 @@ module video_framebuffer #(
     parameter int FRAME_WIDTH = 320,
     parameter int FRAME_HEIGHT = 240
 )(
+    input  logic rst_n,
+
     input  logic wr_clk,
     input  logic wr_en,
     input  logic wr_bank,
@@ -26,8 +28,12 @@ module video_framebuffer #(
         if (wr_en) ram[{wr_bank, wr_addr}] <= wr_data;
     end
 
-    always_ff @(posedge rd_clk) begin
-        rd_data <= ram[{rd_bank, rd_addr}];
+    always_ff @(posedge rd_clk or negedge rst_n) begin
+        if (!rst_n) begin
+            rd_data <= '0;
+        end else begin
+            rd_data <= ram[{rd_bank, rd_addr}];
+        end
     end
 
 endmodule

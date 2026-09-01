@@ -32,20 +32,20 @@ set xdc_files {
 
 # Specify SystemVerilog design files location   -- EDIT
 set sv_files {
-    ../rtl/ycbcr_classifier.sv
-    ../rtl/mask_despeckle_filter.sv
-    ../rtl/centroid_accumulator.sv
-    ../rtl/smooth_tracker.sv
-    ../rtl/servo_controller.sv
-    ../rtl/pwm_generator.sv
-    ../rtl/ov7670_capture.sv
-    ../rtl/ov7670_configurator.sv
-    ../rtl/top.sv
-    ../rtl/vga_pkg.sv
-    ../rtl/vga_timing.sv
-    ../rtl/vga_frame_renderer.sv
-    ../rtl/top_vga.sv
-    ../rtl/video_framebuffer.sv
+    ../rtl/camera/ycbcr_classifier.sv
+    ../rtl/camera/mask_despeckle_filter.sv
+    ../rtl/camera/centroid_accumulator.sv
+    ../rtl/camera/smooth_tracker.sv
+    ../rtl/servo/servo_controller.sv
+    ../rtl/servo/pwm_generator.sv
+    ../rtl/camera/ov7670_capture.sv
+    ../rtl/camera/ov7670_configurator.sv
+    ../rtl/top/top.sv
+    ../rtl/display/vga_pkg.sv
+    ../rtl/display/vga_timing.sv
+    ../rtl/display/vga_frame_renderer.sv
+    ../rtl/display/top_vga.sv
+    ../rtl/display/video_framebuffer.sv
     rtl/top_basys3.sv
 }
 

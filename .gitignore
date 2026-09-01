@@ -25,6 +25,8 @@ sim/xsim*
 sim/*.wdb
 sim/.hbs
 
+tools/build
+
 vivado*
 xvlog*
 xelab*

@@ -1,2 +1,2 @@
-sv work ../../rtl/servo_controller.sv
+sv work ../../rtl/servo/servo_controller.sv
 sv work ../servo_controller/servo_controller_tb.sv

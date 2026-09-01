@@ -1,8 +1,7 @@
 # Two-Basys-3 tracking system
 
-The repository now contains two additional FPGA targets alongside the original
-single-board design.  The original `top.sv`, `top_basys3.sv`, constraint file,
-and batch-build setup remain unchanged.
+The repository contains separate camera and servo FPGA targets alongside the
+original single-board design retained for reference.
 
 ```text
 Camera Basys 3                                      Servo Basys 3
@@ -34,9 +33,9 @@ packet takes 700 microseconds, far less than one camera frame.
 
 | Role | Files |
 | --- | --- |
-| Shared transport | `rtl/tracking_uart_pkg.sv`, `rtl/tracking_uart_tx.sv`, `rtl/tracking_uart_rx.sv` |
-| Camera application | `rtl/top_camera.sv`, `fpga/rtl/top_camera_basys3.sv`, `fpga/constraints/top_camera_basys3.xdc` |
-| Servo application | `rtl/top_servo.sv`, `fpga/rtl/top_servo_basys3.sv`, `fpga/constraints/top_servo_basys3.xdc` |
+| Shared transport | `rtl/communication/tracking_uart_pkg.sv`, `rtl/communication/tracking_uart_tx.sv`, `rtl/communication/tracking_uart_rx.sv` |
+| Camera application | `rtl/top/top_camera.sv`, `fpga/rtl/top_camera_basys3.sv`, `fpga/constraints/top_camera_basys3.xdc` |
+| Servo application | `rtl/top/top_servo.sv`, `fpga/rtl/top_servo_basys3.sv`, `fpga/constraints/top_servo_basys3.xdc` |
 
 `top_camera` retains the camera, tracking, and VGA path, but replaces the
 local PWM output with UART TX.  `top_servo` receives a validated packet and
@@ -107,20 +106,20 @@ Use `top_camera_basys3` as the top module and add
 Add these design sources, in this order:
 
 ```text
-rtl/vga_pkg.sv
-rtl/ycbcr_classifier.sv
-rtl/mask_despeckle_filter.sv
-rtl/centroid_accumulator.sv
-rtl/smooth_tracker.sv
-rtl/ov7670_capture.sv
-rtl/ov7670_configurator.sv
-rtl/vga_timing.sv
-rtl/video_framebuffer.sv
-rtl/vga_frame_renderer.sv
-rtl/top_vga.sv
-rtl/tracking_uart_pkg.sv
-rtl/tracking_uart_tx.sv
-rtl/top_camera.sv
+rtl/display/vga_pkg.sv
+rtl/camera/ycbcr_classifier.sv
+rtl/camera/mask_despeckle_filter.sv
+rtl/camera/centroid_accumulator.sv
+rtl/camera/smooth_tracker.sv
+rtl/camera/ov7670_capture.sv
+rtl/camera/ov7670_configurator.sv
+rtl/display/vga_timing.sv
+rtl/display/video_framebuffer.sv
+rtl/display/vga_frame_renderer.sv
+rtl/display/top_vga.sv
+rtl/communication/tracking_uart_pkg.sv
+rtl/communication/tracking_uart_tx.sv
+rtl/top/top_camera.sv
 fpga/rtl/top_camera_basys3.sv
 ```
 
@@ -135,11 +134,11 @@ Use `top_servo_basys3` as the top module and add
 Add:
 
 ```text
-rtl/tracking_uart_pkg.sv
-rtl/tracking_uart_rx.sv
-rtl/servo_controller.sv
-rtl/pwm_generator.sv
-rtl/top_servo.sv
+rtl/communication/tracking_uart_pkg.sv
+rtl/communication/tracking_uart_rx.sv
+rtl/servo/servo_controller.sv
+rtl/servo/pwm_generator.sv
+rtl/top/top_servo.sv
 fpga/rtl/top_servo_basys3.sv
 ```
 
