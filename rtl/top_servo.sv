@@ -55,6 +55,10 @@ module top_servo (
         .VALID_FRAMES_TO_MOVE(2),
         .PAN_MAX_STEP(12),
         .TILT_MAX_STEP(8),
+        // 9 cm camera-to-laser offset, calibrated for roughly 1 m distance.
+        .PAN_HOME_OFFSET(-7),
+        // Startup calibration goes to the second JXADC signal pin (L3).
+        .TILT_STARTUP_POSITION(-60),
         .PAN_POSITION_LIMIT(127),
         .TILT_POSITION_LIMIT(60),
         .PAN_REVERSE(1'b0),

@@ -76,7 +76,9 @@ module top_servo_basys3 (
 
     top_servo u_top_servo (
         .clk(clk_40mhz),
-        .rst(btnC),
+        // Keep the servo controller in reset until the generated clock is
+        // stable, so TILT_STARTUP_POSITION is applied after every power-up.
+        .rst(btnC | ~locked),
         .uart_rx(uart_rx),
         .led(led),
         .servo_pan_pwm(servo_pan_pwm),

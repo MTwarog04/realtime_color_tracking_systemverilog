@@ -11,6 +11,8 @@ module servo_controller #(
     parameter int VALID_FRAMES_TO_MOVE = 2,
     parameter int PAN_MAX_STEP = 4,
     parameter int TILT_MAX_STEP = 4,
+    parameter int PAN_HOME_OFFSET = 0,
+    parameter int TILT_STARTUP_POSITION = 0,
     parameter int PAN_POSITION_LIMIT = 127,
     parameter int TILT_POSITION_LIMIT = 127,
     parameter bit PAN_REVERSE = 1'b0,
@@ -28,6 +30,17 @@ module servo_controller #(
 
     localparam int VALID_CNT_W = (VALID_FRAMES_TO_MOVE < 2) ?
                                  1 : $clog2(VALID_FRAMES_TO_MOVE + 1);
+
+    // The camera dimensions and servo limits are parameters, but the
+    // reciprocal factors are calculated during elaboration.  This keeps the
+    // coordinate mapping out of the slow, inferred hardware divider.
+    localparam int RECIP_SHIFT = 16;
+    localparam logic [16:0] PAN_SCALE =
+        ((PAN_POSITION_LIMIT * (1 << RECIP_SHIFT)) + CENTER_X - 1) /
+        CENTER_X;
+    localparam logic [16:0] TILT_SCALE =
+        ((TILT_POSITION_LIMIT * (1 << RECIP_SHIFT)) + CENTER_Y - 1) /
+        CENTER_Y;
 
     logic signed [10:0] err_x;
     logic signed [9:0]  err_y;
@@ -49,6 +62,30 @@ module servo_controller #(
                 clamp_position = -position_limit;
             end else begin
                 clamp_position = value[8:0];
+            end
+        end
+    endfunction
+
+    function automatic logic signed [31:0] scale_position(
+        input logic signed [10:0] value,
+        input logic        [16:0] scale
+    );
+        logic        negative;
+        logic [10:0] magnitude;
+        logic [27:0] product;
+        logic [11:0] quotient;
+        begin
+            negative = (value < 0);
+            magnitude = negative ? $unsigned(-value) : $unsigned(value);
+            product = magnitude * scale;
+            quotient = product >> RECIP_SHIFT;
+
+            // Signed division truncates toward zero.  Shift the magnitude
+            // first and restore the sign to retain that behaviour.
+            if (negative) begin
+                scale_position = -$signed({1'b0, quotient});
+            end else begin
+                scale_position = $signed({1'b0, quotient});
             end
         end
     endfunction
@@ -94,23 +131,26 @@ module servo_controller #(
         if ((err_x <= DEAD_BAND_X) && (err_x >= -DEAD_BAND_X)) begin
             pan_target = 32'sd0;
         end else begin
-            pan_target = (err_x * PAN_POSITION_LIMIT) / CENTER_X;
+            pan_target = scale_position(err_x, PAN_SCALE);
         end
 
         if ((err_y <= DEAD_BAND_Y) && (err_y >= -DEAD_BAND_Y)) begin
             tilt_target = 32'sd0;
         end else begin
-            tilt_target = (err_y * TILT_POSITION_LIMIT) / CENTER_Y;
+            tilt_target = scale_position({err_y[9], err_y}, TILT_SCALE);
         end
 
         if (PAN_REVERSE) pan_target = -pan_target;
+        // Permanent mechanical alignment of the laser relative to the camera.
+        // It is applied to every target, not only while the board resets.
+        pan_target = pan_target + PAN_HOME_OFFSET;
         if (TILT_REVERSE) tilt_target = -tilt_target;
     end
 
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            pan_s <= '0;
-            tilt_s <= '0;
+            pan_s <= clamp_position(PAN_HOME_OFFSET, PAN_POSITION_LIMIT);
+            tilt_s <= clamp_position(TILT_STARTUP_POSITION, TILT_POSITION_LIMIT);
             valid_streak <= '0;
         end else if (frame_tick) begin
             if (!target_valid) begin

@@ -311,9 +311,8 @@ module top_camera (
 
     assign frame_tick = frame_start_sync1 & ~frame_start_sync2;
 
-    // The link transfers exactly the position currently used by the legacy
-    // single-board servo controller.  These signals have already crossed from
-    // the camera PCLK domain to clk and frame_tick belongs to the same domain.
+    // The first physical servo is the horizontal axis and the second one is
+    // the vertical axis, matching the X/Y fields of the UART protocol.
     tracking_uart_tx #(
         .CLK_HZ(SYS_CLK_HZ),
         .BAUD_RATE(100_000)
