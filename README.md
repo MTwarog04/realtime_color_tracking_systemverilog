@@ -1,80 +1,129 @@
-# Two-Basys-3 tracking system
+# System śledzenia obiektów w czasie rzeczywistym
 
-The repository contains separate camera and servo FPGA targets alongside the
-original single-board design retained for reference.
+Autorzy: Maciej Nowak, Mikołaj Twaróg
+
+Projekt realizuje śledzenie niebieskiego obiektu za pomocą kamery OV7670 i dwóch
+płytek Basys 3. Pierwsza płytka zajmuje się obsługą kamery, analizą obrazu oraz
+wyświetlaniem podglądu VGA. Druga odbiera pozycję wykrytego obiektu i steruje
+dwoma serwomechanizmami MG90S, na których znajduje się moduł laserowy.
+
+W repozytorium znajdują się dwa osobne warianty przeznaczone do wygenerowania
+bitstreamów dla płytki kamery i płytki serwa. Zostawiliśmy również starszą wersję
+jednopłytkową jako punkt odniesienia.
 
 ```text
-Camera Basys 3                                      Servo Basys 3
---------------                                      -------------
-OV7670 -> image tracking -> UART TX  --- JA1 --->   UART RX -> servo controller -> PWM
-                                  GND --- GND --->
+Basys 3 z kamerą                                  Basys 3 z serwami
+----------------                                  ------------------
+OV7670 -> analiza obrazu -> UART TX --- JA1 ---> UART RX -> sterownik serw -> PWM
+                                   GND --- GND --->
 ```
 
-The camera board sends the same data that the legacy single-board servo
-controller used: a frame update, target-valid flag, 9-bit X coordinate, and
-8-bit Y coordinate.  It does not send the video image.
+Pomiędzy płytkami nie jest przesyłany cały obraz. Płytka kamery wysyła jedynie
+informację o nowej ramce, flagę poprawnego wykrycia celu oraz jego współrzędne:
+9-bitową współrzędną X i 8-bitową współrzędną Y.
 
-## Hardware connection
+## Sposób działania
 
-Connect the two boards with exactly these two connections:
+Po uruchomieniu układu kamera OV7670 jest konfigurowana przez interfejs SCCB.
+Obraz wejściowy 640×480 jest zmniejszany do rozdzielczości roboczej 320×240,
+a następnie analizowany w przestrzeni barw YCbCr.
 
-1. Camera board `JA1` -> servo board `JA1`.
-2. A Pmod `GND` pin -> a Pmod `GND` pin (pin 5 or pin 11 on each header).
+Kolejne etapy przetwarzania obejmują:
 
-Do not join the two boards' 3.3 V / VCC pins.  The servos still need their own
-stable 5 V supply, with that supply's ground connected to the servo-board
-ground.
+1. wykrywanie pikseli należących do niebieskiego obiektu,
+2. usuwanie pojedynczych zakłóceń z maski,
+3. analizę znalezionych obszarów pod względem rozmiaru, proporcji i wypełnienia,
+4. wyznaczenie środka najlepszego obiektu,
+5. wygładzenie jego położenia pomiędzy kolejnymi ramkami,
+6. wysłanie współrzędnych do płytki sterującej serwami.
 
-The UART runs at 100,000 baud.  This value is deliberate: the 40 MHz internal
-clock divides into it exactly (400 clocks per bit).  A seven-byte tracking
-packet takes 700 microseconds, far less than one camera frame.
+Podgląd jest wyświetlany przez VGA w rozdzielczości 1024×768 przy 60 Hz.
+Czerwony znacznik pokazuje wyznaczony środek obiektu. Płytka serwa odbiera
+pakiety UART, sprawdza CRC i dopiero wtedy aktualizuje pozycję mechanizmu.
 
-## New source files
+## Połączenie sprzętu
 
-| Role | Files |
+Do połączenia obu płytek wystarczą dwa przewody:
+
+1. `JA1` płytki kamery -> `JA1` płytki serwa,
+2. pin `GND` złącza Pmod płytki kamery -> pin `GND` płytki serwa.
+
+Jako masę można wykorzystać pin 5 albo 11 złącza Pmod. Nie należy łączyć ze
+sobą pinów 3,3 V ani VCC obu płytek.
+
+Serwomechanizmy powinny być zasilane z osobnego, stabilnego źródła 5 V. Masa
+tego zasilacza musi być połączona z masą płytki sterującej serwami.
+
+UART pracuje z szybkością 100 000 bodów. Wartość została dobrana tak, aby zegar
+40 MHz dzielił się przez nią bez reszty, co daje 400 taktów zegara na jeden bit.
+Przesłanie całego siedmiobajtowego pakietu zajmuje około 700 µs, czyli znacznie
+mniej niż czas jednej ramki obrazu.
+
+## Najważniejsze pliki projektu
+
+| Część projektu | Pliki |
 | --- | --- |
-| Shared transport | `rtl/communication/tracking_uart_pkg.sv`, `rtl/communication/tracking_uart_tx.sv`, `rtl/communication/tracking_uart_rx.sv` |
-| Camera application | `rtl/top/top_camera.sv`, `fpga/rtl/top_camera_basys3.sv`, `fpga/constraints/top_camera_basys3.xdc` |
-| Servo application | `rtl/top/top_servo.sv`, `fpga/rtl/top_servo_basys3.sv`, `fpga/constraints/top_servo_basys3.xdc` |
+| Komunikacja między płytkami | `rtl/communication/tracking_uart_pkg.sv`, `rtl/communication/tracking_uart_tx.sv`, `rtl/communication/tracking_uart_rx.sv` |
+| Płytka kamery | `rtl/top/top_camera.sv`, `fpga/rtl/top_camera_basys3.sv`, `fpga/constraints/top_camera_basys3.xdc` |
+| Płytka serwa | `rtl/top/top_servo.sv`, `fpga/rtl/top_servo_basys3.sv`, `fpga/constraints/top_servo_basys3.xdc` |
 
-`top_camera` retains the camera, tracking, and VGA path, but replaces the
-local PWM output with UART TX.  `top_servo` receives a validated packet and
-feeds its one-cycle packet strobe into the unchanged `servo_controller` and
-`pwm_generator` modules.
+Moduł `top_camera` zawiera obsługę kamery, przetwarzanie obrazu, tor VGA oraz
+nadajnik UART. Moduł `top_servo` odbiera sprawdzony pakiet i przekazuje pozycję
+do modułów `servo_controller` oraz `pwm_generator`.
 
-The protocol is:
+## Format pakietu UART
+
+Pakiet ma następującą postać:
 
 ```text
 A5 5A SEQ X_LO FLAGS Y CRC8
 ```
 
-`FLAGS[0]` is `X[8]`, `FLAGS[1]` is `target_valid`, and the CRC is CRC-8/ATM.
-The receiver updates the servo only after a complete, CRC-correct packet.  If
-no valid packet arrives for 0.5 seconds, it clears `target_valid` and marks
-the link inactive.
+Znaczenie pól:
 
-## Running simulations
+- `A5 5A` - dwa bajty początku pakietu,
+- `SEQ` - numer kolejnego pakietu,
+- `X_LO` - osiem młodszych bitów współrzędnej X,
+- `FLAGS[0]` - najstarszy bit współrzędnej X, czyli `X[8]`,
+- `FLAGS[1]` - flaga `target_valid`,
+- `Y` - współrzędna pionowa,
+- `CRC8` - suma kontrolna CRC-8/ATM.
 
-After sourcing `env.sh`, list or run the self-checking tests with:
+Płytka serwa zmienia pozycję tylko po odebraniu kompletnego pakietu z poprawnym
+CRC. Jeśli przez 0,5 s nie pojawi się poprawny pakiet, odbiornik zeruje flagę
+`target_valid` i oznacza połączenie jako nieaktywne.
+
+## Uruchamianie symulacji
+
+Po wcześniejszym wykonaniu `source env.sh` można wyświetlić listę testów albo
+uruchomić wszystkie testy automatyczne:
 
 ```bash
 ./tools/run_simulation.sh -l
 ./tools/run_simulation.sh -a
 ```
 
-The test set checks PWM timing, servo movement and limits, UART packets and
-CRC errors, colour detection and centroid calculation, OV7670 capture, and a
-complete VGA timing frame. A failed check is reported as `FAILED`.
+Testy sprawdzają między innymi:
 
-## Building both bitstreams automatically
+- czasy przebiegów PWM,
+- ruch serw i ograniczenia pozycji,
+- transmisję UART oraz obsługę błędnego CRC,
+- wykrywanie koloru i obliczanie środka obiektu,
+- odbiór danych z OV7670,
+- pełną ramkę czasową VGA.
 
-After sourcing `env.sh`, run:
+Nieudany test jest oznaczany komunikatem `FAILED`.
+
+## Automatyczne generowanie dwóch bitstreamów
+
+Po przygotowaniu środowiska poleceniem `source env.sh` należy uruchomić:
 
 ```bash
 ./tools/generate_bitstream.sh
 ```
 
-The script creates independent Vivado projects for both boards and writes:
+Skrypt tworzy dwa niezależne projekty Vivado i zapisuje wyniki w katalogu
+`results`:
 
 ```text
 results/top_camera_basys3.bit
@@ -82,28 +131,40 @@ results/top_servo_basys3.bit
 results/warning_summary.log
 ```
 
-Timing and utilization reports remain in `fpga/build/camera` and
-`fpga/build/servo`. To program one board after connecting it, use
-`./tools/program_fpga.sh camera` or `./tools/program_fpga.sh servo`.
+Raporty timingu i wykorzystania zasobów pozostają odpowiednio w katalogach
+`fpga/build/camera` i `fpga/build/servo`.
 
-## Building in Vivado GUI
+Po podłączeniu wybranej płytki można ją zaprogramować poleceniem:
 
-Create two Vivado RTL projects outside `fpga/`, for example:
+```bash
+./tools/program_fpga.sh camera
+./tools/program_fpga.sh servo
+```
+
+## Generowanie bitstreamów w Vivado GUI
+
+Jeżeli projekt jest uruchamiany bez skryptu, trzeba utworzyć dwa osobne projekty
+RTL w Vivado. Najlepiej zapisać je poza katalogiem `fpga`, na przykład:
 
 ```text
 vivado_projects/camera/basys_camera.xpr
 vivado_projects/servo/basys_servo.xpr
 ```
 
-When adding sources, clear Vivado's **Copy sources into project** option so
-both projects refer to this one repository.
+Podczas dodawania źródeł należy odznaczyć opcję **Copy sources into project**.
+Dzięki temu oba projekty korzystają bezpośrednio z plików znajdujących się w
+repozytorium i nie tworzą dodatkowych kopii kodu.
 
-### Camera project
+### Projekt kamery
 
-Use `top_camera_basys3` as the top module and add
-`fpga/constraints/top_camera_basys3.xdc` as the constraint file.
+Jako moduł najwyższego poziomu należy ustawić `top_camera_basys3`, a jako plik
+ograniczeń dodać:
 
-Add these design sources, in this order:
+```text
+fpga/constraints/top_camera_basys3.xdc
+```
+
+Pliki źródłowe należy dodać w następującej kolejności:
 
 ```text
 rtl/display/vga_pkg.sv
@@ -123,15 +184,19 @@ rtl/top/top_camera.sv
 fpga/rtl/top_camera_basys3.sv
 ```
 
-Choose **Generate Bitstream**.  Program the result into the Basys 3 connected
-to the camera.
+Po wykonaniu **Generate Bitstream** otrzymany plik należy wgrać do płytki
+połączonej z kamerą OV7670 i monitorem VGA.
 
-### Servo project
+### Projekt serwa
 
-Use `top_servo_basys3` as the top module and add
-`fpga/constraints/top_servo_basys3.xdc` as the constraint file.
+Jako moduł najwyższego poziomu należy ustawić `top_servo_basys3`, a jako plik
+ograniczeń dodać:
 
-Add:
+```text
+fpga/constraints/top_servo_basys3.xdc
+```
+
+W projekcie powinny znaleźć się następujące pliki:
 
 ```text
 rtl/communication/tracking_uart_pkg.sv
@@ -142,14 +207,21 @@ rtl/top/top_servo.sv
 fpga/rtl/top_servo_basys3.sv
 ```
 
-Choose **Generate Bitstream**.  Program this result into the Basys 3 connected
-to the servos.
+Wygenerowany bitstream należy wgrać do płytki odpowiedzialnej za sterowanie
+serwomechanizmami.
 
-## Servo-node LEDs
+## Diody diagnostyczne płytki serwa
 
-| LED | Meaning |
+| Dioda | Znaczenie |
 | --- | --- |
-| LD0 | A valid packet was received during the last 0.5 seconds |
-| LD1 | A malformed packet was seen since reset |
-| LD2 | The most recent valid packet reported a detected target |
-| LD3 | Current level of the UART RX wire (normally high while idle) |
+| `LD0` | W ciągu ostatnich 0,5 s odebrano poprawny pakiet |
+| `LD1` | Od ostatniego resetu odebrano przynajmniej jeden błędny pakiet |
+| `LD2` | Ostatni poprawny pakiet zawierał wykryty cel |
+| `LD3` | Aktualny poziom linii UART RX; w stanie spoczynkowym powinna być wysoka |
+
+## Tryb diagnostyczny kamery
+
+Tryb diagnostyczny włącza się przełącznikiem `SW15`. Przełączniki `SW14:SW13`
+pozwalają wybrać wyświetlany kanał: Y, Cb, Cr albo moduł chrominancji. `SW12`
+służy do zmiany kolejności składowych chrominancji, jeśli kamera przesyła je w
+odwrotnej kolejności.
