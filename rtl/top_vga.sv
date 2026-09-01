@@ -78,8 +78,8 @@ vga_frame_renderer #(
     .FRAME_WIDTH(320),
     .FRAME_HEIGHT(240),
     .SCALE(2),
-    .X_OFFSET(80),
-    .Y_OFFSET(60)
+    .X_OFFSET(272),
+    .Y_OFFSET(64)
 ) u_vga_frame_renderer (
     .clk,
     .rst_n,

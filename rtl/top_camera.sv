@@ -3,6 +3,7 @@
 
 module top_camera (
     input  logic       clk,
+    input  logic       camera_ref_clk,
     input  logic       rst,
     output logic [15:0] led,
     input  logic [15:0] sw,
@@ -25,7 +26,7 @@ module top_camera (
     localparam int IMG_H = 240;
     localparam int TOP_NOISE_LINES = 0;
     localparam int MAX_BLOB_PIXELS = 7680;
-    localparam int SYS_CLK_HZ      = 40_000_000;
+    localparam int SYS_CLK_HZ      = 65_000_000;
     localparam int BALL_ASPECT_NUM = 2;
     localparam int BALL_ASPECT_DEN = 3;
     localparam int BALL_MIN_FILL_PERCENT = 40;
@@ -135,8 +136,12 @@ module top_camera (
 
     assign frame_pixel = diag_enable ? diag_pixel : (display_mask ? 8'hff : pix_y_luma);
 
-    always_ff @(posedge clk) begin
-        clk_div <= clk_div + 1'b1;
+    always_ff @(posedge camera_ref_clk or negedge rst_n) begin
+        if (!rst_n) begin
+            clk_div <= '0;
+        end else begin
+            clk_div <= clk_div + 1'b1;
+        end
     end
 
     assign clk_25mhz = clk_div[1];

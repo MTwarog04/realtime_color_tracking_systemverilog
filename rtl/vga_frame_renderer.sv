@@ -3,8 +3,8 @@ module vga_frame_renderer #(
         parameter int FRAME_WIDTH = 320,
         parameter int FRAME_HEIGHT = 240,
         parameter int SCALE = 2,
-        parameter int X_OFFSET = 80,
-        parameter int Y_OFFSET = 60
+        parameter int X_OFFSET = 272,
+        parameter int Y_OFFSET = 64
     ) (
         input  logic clk,
         input  logic rst_n,
@@ -41,10 +41,10 @@ module vga_frame_renderer #(
 
     localparam int ROT_WIDTH = FRAME_HEIGHT;
     localparam int ROT_HEIGHT = FRAME_WIDTH;
-    localparam int DISPLAY_HEIGHT = VER_PIXELS;
-    localparam int DISPLAY_WIDTH = (ROT_WIDTH * DISPLAY_HEIGHT) / ROT_HEIGHT;
-    localparam int DISPLAY_X_OFFSET = (HOR_PIXELS - DISPLAY_WIDTH) / 2;
-    localparam int DISPLAY_Y_OFFSET = (VER_PIXELS - DISPLAY_HEIGHT) / 2;
+    localparam int DISPLAY_WIDTH = ROT_WIDTH * SCALE;
+    localparam int DISPLAY_HEIGHT = ROT_HEIGHT * SCALE;
+    localparam int DISPLAY_X_OFFSET = X_OFFSET;
+    localparam int DISPLAY_Y_OFFSET = Y_OFFSET;
     localparam int BORDER_X0 = (DISPLAY_X_OFFSET >= 2) ? (DISPLAY_X_OFFSET - 2) : 0;
     localparam int BORDER_Y0 = (DISPLAY_Y_OFFSET >= 2) ? (DISPLAY_Y_OFFSET - 2) : 0;
     localparam int BORDER_X1 = DISPLAY_X_OFFSET + DISPLAY_WIDTH + 2;
@@ -166,8 +166,8 @@ module vga_frame_renderer #(
         if (visible_now) begin
             image_x = hcount_in - DISPLAY_X_OFFSET;
             image_y = vcount_in - DISPLAY_Y_OFFSET;
-            rot_x = (image_x * ROT_WIDTH) / DISPLAY_WIDTH;
-            rot_y = (image_y * ROT_HEIGHT) / DISPLAY_HEIGHT;
+            rot_x = image_x / SCALE;
+            rot_y = image_y / SCALE;
             src_x = rot_y;
             src_y = FRAME_HEIGHT - 1 - rot_x;
             diff_x = $signed({1'b0, src_x}) - $signed({3'b0, target_x});

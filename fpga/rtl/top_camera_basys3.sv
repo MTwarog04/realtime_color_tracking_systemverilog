@@ -29,15 +29,13 @@ module top_camera_basys3 (
     timeprecision 1ps;
 
     wire clk_in;
+    wire clk_fb_raw;
     wire clk_fb;
-    wire clk_ss;
-    wire clk_out;
+    wire clk_65mhz_raw;
+    wire clk_40mhz_raw;
     wire locked;
+    wire clk_65mhz;
     wire clk_40mhz;
-
-    (* KEEP = "TRUE" *)
-    (* ASYNC_REG = "TRUE" *)
-    logic [7:0] safe_start = '0;
 
     IBUF clk_ibuf (
         .I(clk),
@@ -46,13 +44,15 @@ module top_camera_basys3 (
 
     MMCME2_BASE #(
         .CLKIN1_PERIOD(10.000),
-        .CLKFBOUT_MULT_F(10.000),
-        .CLKOUT0_DIVIDE_F(25.000)
+        .DIVCLK_DIVIDE(5),
+        .CLKFBOUT_MULT_F(52.000),
+        .CLKOUT0_DIVIDE_F(16.000),
+        .CLKOUT1_DIVIDE(26)
     ) clk_in_mmcme2 (
         .CLKIN1(clk_in),
-        .CLKOUT0(clk_out),
+        .CLKOUT0(clk_65mhz_raw),
         .CLKOUT0B(),
-        .CLKOUT1(),
+        .CLKOUT1(clk_40mhz_raw),
         .CLKOUT1B(),
         .CLKOUT2(),
         .CLKOUT2B(),
@@ -61,7 +61,7 @@ module top_camera_basys3 (
         .CLKOUT4(),
         .CLKOUT5(),
         .CLKOUT6(),
-        .CLKFBOUT(clk_fb),
+        .CLKFBOUT(clk_fb_raw),
         .CLKFBOUTB(),
         .CLKFBIN(clk_fb),
         .LOCKED(locked),
@@ -69,26 +69,25 @@ module top_camera_basys3 (
         .RST(1'b0)
     );
 
-    BUFH clk_out_bufh (
-        .I(clk_out),
-        .O(clk_ss)
+    BUFG clk_fb_bufg (
+        .I(clk_fb_raw),
+        .O(clk_fb)
     );
 
-    always_ff @(posedge clk_ss) begin
-        safe_start <= {safe_start[6:0], locked};
-    end
+    BUFG clk_65mhz_bufg (
+        .I(clk_65mhz_raw),
+        .O(clk_65mhz)
+    );
 
-    BUFGCE #(
-        .SIM_DEVICE("7SERIES")
-    ) clk_out_bufgce (
-        .I(clk_out),
-        .CE(safe_start[7]),
+    BUFG clk_40mhz_bufg (
+        .I(clk_40mhz_raw),
         .O(clk_40mhz)
     );
 
     top_camera u_top_camera (
-        .clk(clk_40mhz),
-        .rst(btnC),
+        .clk(clk_65mhz),
+        .camera_ref_clk(clk_40mhz),
+        .rst(btnC | ~locked),
         .led(led),
         .sw(sw),
         .uart_tx(uart_tx),
