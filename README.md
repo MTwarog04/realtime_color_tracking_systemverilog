@@ -64,8 +64,8 @@ mniej niż czas jednej ramki obrazu.
 | Część projektu | Pliki |
 | --- | --- |
 | Komunikacja między płytkami | `rtl/communication/tracking_uart_pkg.sv`, `rtl/communication/tracking_uart_tx.sv`, `rtl/communication/tracking_uart_rx.sv` |
-| Płytka kamery | `rtl/top/top_camera.sv`, `fpga/rtl/top_camera_basys3.sv`, `constraints/top_camera_basys3.xdc` |
-| Płytka serwa | `rtl/top/top_servo.sv`, `fpga/rtl/top_servo_basys3.sv`, `constraints/top_servo_basys3.xdc` |
+| Płytka kamery | `rtl/top/top_camera.sv`, `fpga/rtl/top_camera_basys3.sv`, `fpga/constraints/top_camera_basys3.xdc` |
+| Płytka serwa | `rtl/top/top_servo.sv`, `fpga/rtl/top_servo_basys3.sv`, `fpga/constraints/top_servo_basys3.xdc` |
 
 Moduł `top_camera` zawiera obsługę kamery, przetwarzanie obrazu, tor VGA oraz
 nadajnik UART. Moduł `top_servo` odbiera sprawdzony pakiet i przekazuje pozycję
@@ -161,7 +161,7 @@ Jako moduł najwyższego poziomu należy ustawić `top_camera_basys3`, a jako pl
 ograniczeń dodać:
 
 ```text
-constraints/top_camera_basys3.xdc
+fpga/constraints/top_camera_basys3.xdc
 ```
 
 Pliki źródłowe należy dodać w następującej kolejności:
@@ -193,7 +193,7 @@ Jako moduł najwyższego poziomu należy ustawić `top_servo_basys3`, a jako pli
 ograniczeń dodać:
 
 ```text
-constraints/top_servo_basys3.xdc
+fpga/constraints/top_servo_basys3.xdc
 ```
 
 W projekcie powinny znaleźć się następujące pliki:
